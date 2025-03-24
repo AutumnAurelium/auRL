@@ -17,7 +17,7 @@ from accelerate.utils import broadcast_object_list, gather, gather_object, is_pe
 from .utils import selective_log_softmax, is_conversational, apply_chat_template
 
 
-class RLTrainer:
+class GRPOTrainer:
     accelerator: Accelerator
     
     model: PreTrainedModel

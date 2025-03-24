@@ -2,7 +2,7 @@ from datasets import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from accelerate import Accelerator
 
-from aurl import RLTrainer
+from aurl import GRPOTrainer
 
 def gsm8k_reward(output: str, answer: str):
     pass
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     
     dataset = Dataset.from_json("data/gsm8k.jsonl")
     
-    trainer = RLTrainer(
+    trainer = GRPOTrainer(
         model,
         ref,
         tok
