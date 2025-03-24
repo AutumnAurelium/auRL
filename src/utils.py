@@ -87,7 +87,7 @@ def remove_hooks(model: DeepSpeedEngine) -> None:
     optimizer_offload.forward_hooks = []
     optimizer_offload.backward_hooks = []
 
-# This function is taken directly from [HuggingFace TRL](https://github.com/huggingface/trl), Copyright 2025 The HuggingFace Team.
+# This function is adapted slightly from [HuggingFace TRL](https://github.com/huggingface/trl), Copyright 2025 The HuggingFace Team.
 def add_hooks(model: DeepSpeedEngine) -> None:
     """Adds the optimizer hooks from a DeepSpeed ZeRO-3 model."""
     if not hasattr(model, "optimizer"):  # before the first training step, the model has no optimizer
@@ -98,11 +98,10 @@ def add_hooks(model: DeepSpeedEngine) -> None:
         optimizer_offload = model.optimizer
     else:
         raise RuntimeError("The model optimizer is None, which is not yet supported.")
-    if version.parse(deepspeed.__version__) >= version.parse("0.16.4"):
-        # Account for renaming in https://github.com/deepspeedai/DeepSpeed/pull/6847
-        optimizer_offload._register_deepspeed_module(optimizer_offload.module)
-    else:
-        optimizer_offload._register_hooks_recursively(optimizer_offload.module)
+    
+    # This is named something different in deepspeed < 0.16.4, but we require >=0.16.4
+    # https://github.com/deepspeedai/DeepSpeed/pull/6847
+    optimizer_offload._register_deepspeed_module(optimizer_offload.module)
 
 # This function is taken directly from [HuggingFace TRL](https://github.com/huggingface/trl), Copyright 2025 The HuggingFace Team.
 @contextmanager
