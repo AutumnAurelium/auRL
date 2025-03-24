@@ -5,7 +5,10 @@ from accelerate import Accelerator
 from aurl import GRPOTrainer
 
 def gsm8k_reward(output: str, answer: str):
-    pass
+    if f"<answer>{answer}</answer>" in output:
+        return 1.0
+    else:
+        return 0.0
 
 if __name__ == "__main__":
     accelerator = Accelerator(
@@ -21,9 +24,11 @@ if __name__ == "__main__":
     dataset = Dataset.from_json("data/gsm8k.jsonl")
     
     trainer = GRPOTrainer(
+        accelerator,
         model,
         ref,
-        tok
+        tok,
+        [gsm8k_reward]
     )
     
     for i in range(10):

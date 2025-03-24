@@ -24,11 +24,16 @@ class GRPOTrainer:
     tokenizer: PreTrainedTokenizerBase
 
     num_iterations: int
+    
     temperature: float
+    num_generations: int
+    
     beta: float
-
     epsilon_low: float
     epsilon_high: float
+
+    # Whether to do the std-normalization. Some research implies disabling it is better.    
+    do_std_reward_scaling: bool
 
     reward_funcs: list[Callable]
 
@@ -41,24 +46,33 @@ class GRPOTrainer:
         reward_funcs: list[Callable],
         num_iterations=1,
         temperature=0.5,
+        num_generations=8,
         beta=0.05,
         epsilon=0.2,
         epsilon_high=None,
+        do_std_reward_scaling=True
     ):
         self.accelerator = accelerator
         
         self.model = model
         self.ref_model = ref_model
         self.tokenizer = tokenizer
+        
+        self.device = self.model.device
+        if self.ref_model.device != self.device:
+            raise ValueError(f"Mismatch between policy model device ({self.device}) and ref model device ({self.ref_model.device})")
 
         self.num_iterations = num_iterations
 
         self.reward_funcs = reward_funcs
 
         self.temperature = temperature
+        self.num_generations = num_generations
         self.beta = beta
         self.epsilon_low = epsilon
         self.epsilon_high = epsilon_high if epsilon_high else epsilon
+        
+        self.do_std_reward_scaling = do_std_reward_scaling
 
     def _per_token_logprobs(
         self,
@@ -108,7 +122,8 @@ class GRPOTrainer:
         prompt_ids = prompt_processed["input_ids"]
         prompt_mask = prompt_processed["attention_mask"]
 
-        prompt_completion_ids = self.model.generate(prompt_ids, prompt_mask)
+        with self.accelerator.unwrap_model(self.model) as unwrapped_model:
+            prompt_completion_ids = unwrapped_model.generate(prompt_ids, prompt_mask)
 
         # separate it out
         prompt_length = prompt_ids.size(1)
@@ -116,7 +131,7 @@ class GRPOTrainer:
         completion_ids = prompt_completion_ids[:, prompt_length:]
 
         # Mask everything after the first EOS token
-        is_eos = completion_ids == self.processing_class.eos_token_id
+        is_eos = completion_ids == self.tokenizer.eos_token_id
 
         # calculate index of the first EOS token in each sequence in the batch
         eos_idx = torch.full(
@@ -143,7 +158,7 @@ class GRPOTrainer:
             # When using num_iterations == 1, old_per_token_logps == per_token_logps, so we can skip it's
             # computation here, and use per_token_logps.detach() instead.
             if self.num_iterations > 1:
-                old_per_token_logps = self._get_per_token_logps(
+                old_per_token_logps = self._per_token_logprobs(
                     self.model, prompt_completion_ids, attention_mask, logits_to_keep
                 )
             else:
@@ -152,7 +167,7 @@ class GRPOTrainer:
             if self.beta == 0.0:
                 ref_per_token_logps = None
             elif self.ref_model is not None:
-                ref_per_token_logps = self._get_per_token_logps(
+                ref_per_token_logps = self._per_token_logprobs(
                     self.ref_model,
                     prompt_completion_ids,
                     attention_mask,
@@ -160,7 +175,7 @@ class GRPOTrainer:
                 )
             else:
                 with self.accelerator.unwrap_model(self.model).disable_adapter():
-                    ref_per_token_logps = self._get_per_token_logps(
+                    ref_per_token_logps = self._per_token_logprobs(
                         self.model,
                         prompt_completion_ids,
                         attention_mask,
@@ -244,7 +259,7 @@ class GRPOTrainer:
             self.num_generations, dim=0
         )
         advantages = rewards - mean_grouped_rewards
-        if self.args.scale_rewards:
+        if self.do_std_reward_scaling:
             advantages = advantages / (std_grouped_rewards + 1e-4)
 
         # Slice to keep only the local part of the data
@@ -330,9 +345,7 @@ class GRPOTrainer:
         )
         input_ids = torch.cat([prompt_ids, completion_ids], dim=1)
         attention_mask = torch.cat([prompt_mask, completion_mask], dim=1)
-        logits_to_keep = completion_ids.size(
-            1
-        )  # we only need to compute the logits for the completion tokens
+        logits_to_keep = completion_ids.size(1)  # we only need to compute the logits for the completion tokens
 
         per_token_logps = self._per_token_logprobs(
             self.model, input_ids, attention_mask, logits_to_keep
@@ -377,6 +390,3 @@ class GRPOTrainer:
         # self._metrics[mode]["clip_ratio"].append(self.accelerator.gather_for_metrics(clip_ratio).mean().item())
 
         return loss
-
-    def train(self):
-        pass

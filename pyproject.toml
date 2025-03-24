@@ -10,5 +10,6 @@ dependencies = [
     "torch>=2.6.0",
     "transformers>=4.50.0",
     "wandb>=0.19.8",
-    "accelerate >= 1.5; sys_platform == 'linux'"
+    "accelerate >= 1.5; sys_platform == 'linux'",
+    "deepspeed >= 0.16.4; sys_platform == 'linux'"
 ]

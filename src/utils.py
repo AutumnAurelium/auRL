@@ -1,5 +1,14 @@
 import torch
 from transformers import PreTrainedTokenizer
+from typing import Union
+from packaging import version
+from contextlib import contextmanager
+import deepspeed
+from deepspeed import DeepSpeedEngine
+from accelerate import Accelerator
+import torch.nn.functional as F
+from torch.nn.parallel import DistributedDataParallel
+import itertools
 
 # This function is taken directly from [HuggingFace TRL](https://github.com/huggingface/trl), Copyright 2025 The HuggingFace Team.
 def selective_log_softmax(logits: torch.Tensor, index: int):
@@ -46,3 +55,70 @@ def apply_chat_template(prompt: any, tokenizer: PreTrainedTokenizer) -> str:
         return tokenizer.apply_chat_template(prompt)
     else:
         return prompt
+
+# This function is taken directly from [HuggingFace TRL](https://github.com/huggingface/trl), Copyright 2025 The HuggingFace Team.
+def get_all_parameters(sub_module, recurse=False):
+    return itertools.chain(sub_module.named_parameters(recurse=recurse), sub_module.ds_external_parameters())
+
+# This function is taken directly from [HuggingFace TRL](https://github.com/huggingface/trl), Copyright 2025 The HuggingFace Team.
+def iter_params(module, recurse=False):
+    return [param for _, param in get_all_parameters(module, recurse)]
+
+# This function is taken directly from [HuggingFace TRL](https://github.com/huggingface/trl), Copyright 2025 The HuggingFace Team.
+def remove_hooks(model: DeepSpeedEngine) -> None:
+    """Removes the optimizer hooks from a DeepSpeed ZeRO-3 model."""
+    if not hasattr(model, "optimizer"):  # before the first training step, the model has no optimizer
+        return
+    if model.optimizer is not None and hasattr(model.optimizer, "parameter_offload"):
+        optimizer_offload = model.optimizer.parameter_offload
+    elif model.optimizer is not None:
+        optimizer_offload = model.optimizer
+    else:
+        raise RuntimeError("The model optimizer is None, which is not yet supported.")
+
+    for param in iter_params(optimizer_offload.module, recurse=True):
+        param.ds_active_sub_modules.clear()
+
+    for hook in optimizer_offload.forward_hooks:
+        hook.remove()
+    for hook in optimizer_offload.backward_hooks:
+        hook.remove()
+
+    optimizer_offload.forward_hooks = []
+    optimizer_offload.backward_hooks = []
+
+# This function is taken directly from [HuggingFace TRL](https://github.com/huggingface/trl), Copyright 2025 The HuggingFace Team.
+def add_hooks(model: DeepSpeedEngine) -> None:
+    """Adds the optimizer hooks from a DeepSpeed ZeRO-3 model."""
+    if not hasattr(model, "optimizer"):  # before the first training step, the model has no optimizer
+        return
+    if model.optimizer is not None and hasattr(model.optimizer, "parameter_offload"):
+        optimizer_offload = model.optimizer.parameter_offload
+    elif model.optimizer is not None:
+        optimizer_offload = model.optimizer
+    else:
+        raise RuntimeError("The model optimizer is None, which is not yet supported.")
+    if version.parse(deepspeed.__version__) >= version.parse("0.16.4"):
+        # Account for renaming in https://github.com/deepspeedai/DeepSpeed/pull/6847
+        optimizer_offload._register_deepspeed_module(optimizer_offload.module)
+    else:
+        optimizer_offload._register_hooks_recursively(optimizer_offload.module)
+
+# This function is taken directly from [HuggingFace TRL](https://github.com/huggingface/trl), Copyright 2025 The HuggingFace Team.
+@contextmanager
+def unwrap_model_for_generation(
+    model: Union[DistributedDataParallel, DeepSpeedEngine],
+    accelerator: Accelerator,
+    gather_deepspeed3_params: bool = True,
+):
+    unwrapped_model = accelerator.unwrap_model(model)
+    if accelerator.state.deepspeed_plugin is not None and accelerator.state.deepspeed_plugin.zero_stage == 3:
+        if not gather_deepspeed3_params:
+            yield accelerator.unwrap_model(model)
+        else:
+            with deepspeed.zero.GatheredParameters(model.parameters()):
+                remove_hooks(model)
+                yield accelerator.unwrap_model(model)
+                add_hooks(model)
+    else:
+        yield unwrapped_model
