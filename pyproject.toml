@@ -1,0 +1,14 @@
+[project]
+name = "aurl"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "datasets>=3.4.1",
+    "pandas>=2.2.3",
+    "torch>=2.6.0",
+    "transformers>=4.50.0",
+    "wandb>=0.19.8",
+    "accelerate >= 1.5; sys_platform == 'linux'"
+]
