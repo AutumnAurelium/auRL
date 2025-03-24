@@ -14,7 +14,7 @@ from typing import Callable
 from accelerate import Accelerator
 from accelerate.utils import broadcast_object_list, gather, gather_object, is_peft_model, set_seed
 
-from .utils import selective_log_softmax, is_conversational, apply_chat_template
+from .utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation
 
 
 class GRPOTrainer:
@@ -122,7 +122,8 @@ class GRPOTrainer:
         prompt_ids = prompt_processed["input_ids"]
         prompt_mask = prompt_processed["attention_mask"]
 
-        with self.accelerator.unwrap_model(self.model) as unwrapped_model:
+        # TODO: change to support gather-params-for-generation args
+        with unwrap_model_for_generation(self.model, self.accelerator, False) as unwrapped_model:
             prompt_completion_ids = unwrapped_model.generate(prompt_ids, prompt_mask)
 
         # separate it out
