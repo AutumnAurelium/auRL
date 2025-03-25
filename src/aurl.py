@@ -301,6 +301,7 @@ class GRPOTrainer:
         if self.accelerator.is_main_process:
             # metrics!
             reward_metrics = {}
+            print(rewards_per_func)
             for i, func_rewards in enumerate(rewards_per_func):
                 print(i, func_rewards)
                 reward_metrics[self.reward_funcs[i].__name__] = {
