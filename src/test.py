@@ -66,11 +66,11 @@ if __name__ == "__main__":
     for epoch in range(epochs):
         for step, batch in enumerate(dataset):
             model.eval()
-            rollouts = trainer.generate_rollouts()
+            rollouts = trainer.generate_rollouts(batch)
             model.train()
             
             with accelerator.accumulate(model):
-                loss = trainer.compute_loss()
+                loss = trainer.compute_loss(rollouts)
                 
                 accelerator.backward(loss)
                 accelerator.clip_grad_norm_(
