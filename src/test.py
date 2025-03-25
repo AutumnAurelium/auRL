@@ -14,6 +14,8 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
             rewards.append(1.0)
         else:
             rewards.append(0.0)
+    
+    return rewards
 
 if __name__ == "__main__":
     epochs = 1
