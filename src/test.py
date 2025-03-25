@@ -30,7 +30,7 @@ if __name__ == "__main__":
     
     adam_betas = (0.9, 0.98)
     adam_weight_decay = 0.01
-    initial_lr = 3e-6
+    initial_lr = 3e-5
     
     clip_grad_norm = 0.01
     
