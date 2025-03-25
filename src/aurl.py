@@ -313,6 +313,8 @@ class GRPOTrainer:
                 }
             
             metrics["rewards"] = reward_metrics
+            
+            metrics["completions"] = completions
 
         return {
             "prompt_ids": prompt_ids,
