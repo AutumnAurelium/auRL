@@ -302,6 +302,7 @@ class GRPOTrainer:
             # metrics!
             reward_metrics = {}
             for i, func_rewards in enumerate(rewards_per_func):
+                print(i, func_rewards)
                 reward_metrics[self.reward_funcs[i].__name__] = {
                     "mean": func_rewards.mean().item(),
                     "std": func_rewards.std().item(),
