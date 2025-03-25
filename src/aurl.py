@@ -5,6 +5,7 @@ from transformers import (
     AutoTokenizer,
     PreTrainedTokenizerBase,
     PreTrainedModel,
+    GenerationConfig
 )
 import torch
 import warnings
@@ -36,6 +37,8 @@ class GRPOTrainer:
     do_std_reward_scaling: bool
 
     reward_funcs: list[Callable]
+    
+    generation_config: GenerationConfig
 
     def __init__(
         self,
@@ -50,7 +53,8 @@ class GRPOTrainer:
         beta=0.05,
         epsilon=0.2,
         epsilon_high=None,
-        do_std_reward_scaling=True
+        do_std_reward_scaling=True,
+        generation_config: GenerationConfig = None
     ):
         self.accelerator = accelerator
         
@@ -73,6 +77,22 @@ class GRPOTrainer:
         self.epsilon_high = epsilon_high if epsilon_high else epsilon
         
         self.do_std_reward_scaling = do_std_reward_scaling
+        
+        if generation_config is not None:
+            self.generation_config = generation_config
+        else:
+            self.generation_config = GenerationConfig(
+                max_new_tokens=self.max_completion_length,
+                do_sample=True,
+                pad_token_id=tokenizer.pad_token_id,
+                bos_token_id=tokenizer.bos_token_id,
+                eos_token_id=tokenizer.eos_token_id,
+                temperature=self.temperature,
+                top_p=self.top_p,
+                top_k=self.top_k,
+                min_p=self.min_p,
+                repetition_penalty=self.repetition_penalty
+            )
 
     def _per_token_logprobs(
         self,
@@ -124,7 +144,7 @@ class GRPOTrainer:
 
         # TODO: change to support gather-params-for-generation args
         with unwrap_model_for_generation(self.model, self.accelerator, False) as unwrapped_model:
-            prompt_completion_ids = unwrapped_model.generate(prompt_ids, prompt_mask)
+            prompt_completion_ids = unwrapped_model.generate(prompt_ids, prompt_mask, generation_config=self.generation_config)
 
         # separate it out
         prompt_length = prompt_ids.size(1)
