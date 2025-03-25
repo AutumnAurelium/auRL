@@ -358,7 +358,7 @@ class GRPOTrainer:
         # _generate_rollouts) and use per_token_logps.detach() instead.
         old_per_token_logps = (
             inputs["old_per_token_logps"]
-            if self.num_iterations > 1
+            if self.num_iterations > 1 and inputs["old_per_token_logps"] is not None
             else per_token_logps.detach()
         )
         coef_1 = torch.exp(per_token_logps - old_per_token_logps)
