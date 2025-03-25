@@ -34,7 +34,7 @@ if __name__ == "__main__":
     ref = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B")
     tok = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
     
-    dataset = load_dataset("json", data_files="data/gsm8k.jsonl")
+    dataset = load_dataset("json", data_files="data/gsm8k.jsonl")["train"]
     
     train_dataloader = DataLoader(
         dataset, batch_size=batch_size, shuffle=True
@@ -64,8 +64,9 @@ if __name__ == "__main__":
     
     model.train()
     for epoch in range(epochs):
-        for step, batch in enumerate(dataset["train"]):
+        for step, batch in enumerate(dataset):
             model.eval()
+            print(batch)
             rollouts = trainer.generate_rollouts(batch)
             model.train()
             
