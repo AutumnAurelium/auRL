@@ -37,8 +37,8 @@ if __name__ == "__main__":
         log_with="wandb"
     )
     
-    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B")
-    ref = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B")
+    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B").to("cuda")
+    ref = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B").to("cuda")
     tok = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
     
     dataset = load_dataset("json", data_files="data/gsm8k.jsonl")["train"]
