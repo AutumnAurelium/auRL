@@ -100,24 +100,31 @@ if __name__ == "__main__":
     model.train()
     for epoch in range(epochs):
         for step, batch in enumerate(train_dataloader):
-            model.eval()
-            rollouts = trainer.generate_rollouts(batch)
-            model.train()
-            
-            with accelerator.accumulate(model):
-                loss, metrics = trainer.compute_loss(rollouts)
+            old_logps = None
+            for i in range(trainer.num_iterations):
+                model.eval()
+                rollouts = trainer.generate_rollouts(batch, generate_old_logps=(i == 0))
+                model.train()
                 
-                if accelerator.is_main_process:
-                    wandb.log(metrics)
+                if i == 0:
+                    old_logps = rollouts["old_per_token_logps"]
+                else:
+                    rollouts["old_per_token_logps"] = old_logps
                 
-                accelerator.backward(loss)
-                accelerator.clip_grad_norm_(
-                    model.parameters(), clip_grad_norm
-                )
+                with accelerator.accumulate(model):
+                    loss, metrics = trainer.compute_loss(rollouts)
+                    
+                    if accelerator.is_main_process:
+                        wandb.log(metrics)
+                    
+                    accelerator.backward(loss)
+                    accelerator.clip_grad_norm_(
+                        model.parameters(), clip_grad_norm
+                    )
+                    
+                    optimizer.step()
+                    lr_scheduler.step()
+                    
+                    optimizer.zero_grad()
                 
-                optimizer.step()
-                lr_scheduler.step()
-                
-                optimizer.zero_grad()
-                
-                progress_bar.update()
+            progress_bar.update()

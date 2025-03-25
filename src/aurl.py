@@ -122,7 +122,7 @@ class GRPOTrainer:
             logits, input_ids
         )  # compute logprobs for the input tokens
 
-    def generate_rollouts(self, batch: dict[str, list]):
+    def generate_rollouts(self, batch: dict[str, list], generate_old_logps=False):
         if "prompt" not in batch:
             raise KeyError("Dataset must include 'prompt' column.")
 
@@ -184,7 +184,7 @@ class GRPOTrainer:
         with torch.no_grad():
             # When using num_iterations == 1, old_per_token_logps == per_token_logps, so we can skip its
             # computation here, and use per_token_logps.detach() instead.
-            if self.num_iterations > 1:
+            if self.num_iterations > 1 and generate_old_logps:
                 old_per_token_logps = self._per_token_logprobs(
                     self.model, prompt_completion_ids, attention_mask, logits_to_keep
                 )
