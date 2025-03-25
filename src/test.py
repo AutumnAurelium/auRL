@@ -34,7 +34,7 @@ if __name__ == "__main__":
     
     clip_grad_norm = 0.01
     
-    model_name = "Qwen/Qwen2.5-0.5B"
+    model_name = "Qwen/Qwen2.5-0.5B-Instruct"
     
     accelerator = Accelerator(
         gradient_accumulation_steps=1,
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     tok = AutoTokenizer.from_pretrained(model_name)
     
     dataset = load_dataset("json", data_files="data/gsm8k.jsonl")["train"].map(lambda x: {
-        "prompt": "Tell a story while using as many capital letters and exclamation points as possible:\n\n",
+        "prompt": [{"role": "user", "content": "Tell a story while using as many capital letters and exclamation points as possible:\n\n"}],
         "answer": x["answer"]
     })
     
