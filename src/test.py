@@ -92,6 +92,8 @@ if __name__ == "__main__":
             with accelerator.accumulate(model):
                 loss = trainer.compute_loss(rollouts)
                 
+                print("Loss:", loss)
+                
                 accelerator.backward(loss)
                 accelerator.clip_grad_norm_(
                     model.parameters(), clip_grad_norm

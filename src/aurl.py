@@ -286,8 +286,6 @@ class GRPOTrainer:
             self.num_generations, dim=0
         )
         
-        print(mean_grouped_rewards)
-        
         advantages = rewards - mean_grouped_rewards
         if self.do_std_reward_scaling:
             advantages = advantages / (std_grouped_rewards + 1e-4)
