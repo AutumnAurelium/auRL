@@ -234,7 +234,7 @@ class GRPOTrainer:
                 key for key in batch.keys() if key not in ["prompt", "completion"]
             ]
             reward_kwargs = {
-                key: [example[key] for example in batch] for key in additional_cols
+                key: batch[key] for key in additional_cols
             }
 
             output_reward_func = reward_func(
