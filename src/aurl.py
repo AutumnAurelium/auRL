@@ -132,6 +132,8 @@ class GRPOTrainer:
         metrics = {}
 
         prompts = [apply_chat_template(x, self.tokenizer) for x in batch["prompt"]]
+        
+        print(prompts)
 
         # process with tokenizer, returns dict
         prompt_processed = self.tokenizer(
