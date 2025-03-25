@@ -269,7 +269,7 @@ class GRPOTrainer:
         # Gather the reward per function: this part is crucial, because the rewards are normalized per group and the
         # completions may be distributed across processes
         # TODO: change for accelerate
-        rewards_per_func = gather(rewards_per_func)
+        rewards_per_func = gather(rewards_per_func.to(self.device))
 
         # Sum while treating NaNs as zeroes
         rewards = rewards_per_func.nansum(dim=1)
