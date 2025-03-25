@@ -14,7 +14,7 @@ from typing import Callable
 from accelerate import Accelerator
 from accelerate.utils import broadcast_object_list, gather, gather_object, is_peft_model, set_seed
 
-from .utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation
+from utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation
 
 
 class GRPOTrainer:
