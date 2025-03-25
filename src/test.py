@@ -19,7 +19,7 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
             if c == "!":
                 reward += 2.0
         
-        rewards.append(reward)
+        rewards.append(reward / len(completion))
     
     print(rewards)
     
