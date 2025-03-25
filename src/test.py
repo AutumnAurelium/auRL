@@ -7,6 +7,7 @@ import bitsandbytes as bnb
 from aurl import GRPOTrainer
 
 def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
+    print(completions)
     if f"<answer>{answer}</answer>" in completions[0]:
         return [1.0]
     else:
