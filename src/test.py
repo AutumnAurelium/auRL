@@ -10,7 +10,7 @@ from aurl import GRPOTrainer
 def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
     rewards = []
     for completion in completions:
-        if answer in completion:
+        if answer[0] in completion:
             rewards.append(1.0)
         else:
             rewards.append(0.0)
