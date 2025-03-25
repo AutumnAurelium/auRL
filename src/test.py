@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 import bitsandbytes as bnb
 from tqdm.auto import tqdm
 import wandb
-
+import json
 from aurl import GRPOTrainer
 
 def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     tok = AutoTokenizer.from_pretrained(model_name)
     
     dataset = load_dataset("json", data_files="data/gsm8k.jsonl")["train"].map(lambda x: {
-        "prompt": [[{"role": "user", "content": "Tell a story while using as many capital letters and exclamation points as possible:\n\n"}]],
+        "prompt": json.dumps([{"role": "user", "content": "Tell a story while using as many capital letters and exclamation points as possible:\n\n"}]),
         "answer": x["answer"]
     })
     
@@ -105,6 +105,15 @@ if __name__ == "__main__":
         for step, batch in enumerate(train_dataloader):
             with accelerator.main_process_first():
                 old_policy.load_state_dict(policy.state_dict())
+            
+            try:
+                prompts = []
+                for prompt in batch["prompt"]:
+                    prompts.append(json.loads(prompt))
+                
+                batch["prompt"] = prompts
+            except:
+                pass
             
             for i in range(trainer.num_iterations):
                 policy.eval()
