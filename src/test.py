@@ -48,7 +48,7 @@ if __name__ == "__main__":
     tok = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
     
     dataset = load_dataset("json", data_files="data/gsm8k.jsonl")["train"].map(lambda x: {
-        "prompt": "Answer the following problem while using as many capital letters and exclamation points as possible:\n\n" + x["prompt"],
+        "prompt": "Tell a story while using as many capital letters and exclamation points as possible:\n\n",
         "answer": x["answer"]
     })
     
