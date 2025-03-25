@@ -123,13 +123,12 @@ class GRPOTrainer:
         )  # compute logprobs for the input tokens
 
     def generate_rollouts(self, batch: list[dict]):
-        for row in batch:
-            if "prompt" not in row:
-                raise KeyError("Dataset must include 'prompt' column.")
+        if "prompt" not in row:
+            raise KeyError("Dataset must include 'prompt' column.")
 
         metrics = {}
 
-        prompts = [apply_chat_template(x["prompt"], self.tokenizer) for x in batch]
+        prompts = [apply_chat_template(x, self.tokenizer) for x in batch["prompt"]]
 
         # process with tokenizer, returns dict
         prompt_processed = self.tokenizer(

@@ -99,9 +99,8 @@ if __name__ == "__main__":
     model.train()
     for epoch in range(epochs):
         for step, batch in enumerate(train_dataloader):
-            print(batch)
             model.eval()
-            rollouts = trainer.generate_rollouts([batch])
+            rollouts = trainer.generate_rollouts(batch)
             model.train()
             
             with accelerator.accumulate(model):
