@@ -4,6 +4,7 @@ from accelerate import Accelerator
 from torch.utils.data import DataLoader
 import bitsandbytes as bnb
 from tqdm.auto import tqdm
+import wandb
 
 from aurl import GRPOTrainer
 
@@ -33,6 +34,7 @@ if __name__ == "__main__":
     
     clip_grad_norm = 0.01
     
+    model_name = "Qwen/Qwen2.5-0.5B"
     
     accelerator = Accelerator(
         gradient_accumulation_steps=1,
@@ -40,9 +42,25 @@ if __name__ == "__main__":
         log_with="wandb"
     )
     
-    model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B").to("cuda")
-    ref = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B").to("cuda")
-    tok = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
+    if accelerator.is_main_process:
+        wandb.init(
+            "aurelium",
+            "auRL",
+            config={
+                "epochs": epochs,
+                "batch_size": batch_size,
+                "num_warmup_steps": num_warmup_steps,
+                "adam_betas": adam_betas,
+                "adam_weight_decay": adam_weight_decay,
+                "initial_lr": initial_lr,
+                "clip_grad_norm": clip_grad_norm,
+                "model": model_name
+            }
+        )
+    
+    model = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+    ref = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+    tok = AutoTokenizer.from_pretrained(model_name)
     
     dataset = load_dataset("json", data_files="data/gsm8k.jsonl")["train"].map(lambda x: {
         "prompt": "Tell a story while using as many capital letters and exclamation points as possible:\n\n",
@@ -89,7 +107,9 @@ if __name__ == "__main__":
             with accelerator.accumulate(model):
                 loss, metrics = trainer.compute_loss(rollouts)
                 
-                print(metrics["loss_stats"]["loss"])
+                if accelerator.is_main_process:
+                    print("Loss: ", loss.item())
+                    wandb.log(metrics)
                 
                 accelerator.backward(loss)
                 accelerator.clip_grad_norm_(
