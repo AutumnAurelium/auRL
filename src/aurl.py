@@ -122,7 +122,7 @@ class GRPOTrainer:
             logits, input_ids
         )  # compute logprobs for the input tokens
 
-    def generate_rollouts(self, batch: list[dict]):
+    def generate_rollouts(self, batch: dict[str, list]):
         if "prompt" not in batch:
             raise KeyError("Dataset must include 'prompt' column.")
 
@@ -213,7 +213,7 @@ class GRPOTrainer:
         completions_text = self.tokenizer.batch_decode(
             completion_ids, skip_special_tokens=True
         )
-        if is_conversational(batch[0]):
+        if is_conversational(batch["prompt"][0]):
             completions = []
             for prompt, completion in zip(prompts, completions_text):
                 bootstrap = (
@@ -231,7 +231,7 @@ class GRPOTrainer:
         for i, reward_func in enumerate(self.reward_funcs):
             # Repeat all input columns (but "prompt" and "completion") to match the number of generations
             additional_cols = [
-                key for key in batch[0] if key not in ["prompt", "completion"]
+                key for key in batch.keys() if key not in ["prompt", "completion"]
             ]
             reward_kwargs = {
                 key: [example[key] for example in batch] for key in additional_cols
