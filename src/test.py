@@ -13,7 +13,7 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
     for completion in completions:
         reward = 0.0
         for c in completion:
-            if c.upper() == c:
+            if c.isalpha() and c.upper() == c:
                 reward += 1.0
             
             if c == "!":
