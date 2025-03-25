@@ -276,9 +276,6 @@ class GRPOTrainer:
 
         # Compute group-wise rewards
         mean_grouped_rewards = rewards.view(-1, self.num_generations).mean(dim=1)
-        
-        print(mean_grouped_rewards)
-        
         std_grouped_rewards = rewards.view(-1, self.num_generations).std(dim=1)
 
         # Normalize the rewards to compute the advantages
@@ -288,6 +285,9 @@ class GRPOTrainer:
         std_grouped_rewards = std_grouped_rewards.repeat_interleave(
             self.num_generations, dim=0
         )
+        
+        print(mean_grouped_rewards)
+        
         advantages = rewards - mean_grouped_rewards
         if self.do_std_reward_scaling:
             advantages = advantages / (std_grouped_rewards + 1e-4)
