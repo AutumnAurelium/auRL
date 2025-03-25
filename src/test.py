@@ -3,6 +3,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, get_scheduler
 from accelerate import Accelerator
 from torch.utils.data import DataLoader
 import bitsandbytes as bnb
+from tqdm.auto import tqdm
 
 from aurl import GRPOTrainer
 
@@ -64,6 +65,9 @@ if __name__ == "__main__":
         num_training_steps=len(train_dataloader) * epochs,
     )
     
+    num_training_steps = epochs * len(train_dataloader)
+    progress_bar = tqdm(range(num_training_steps))
+    
     model.train()
     for epoch in range(epochs):
         for step, batch in enumerate(dataset):
@@ -84,3 +88,5 @@ if __name__ == "__main__":
                 lr_scheduler.step()
                 
                 optimizer.zero_grad()
+                
+                progress_bar.update()
