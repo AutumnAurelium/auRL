@@ -87,14 +87,15 @@ if __name__ == "__main__":
         weight_decay=adam_weight_decay,
     )
     
+    num_training_steps = epochs * len(train_dataloader) * trainer.num_iterations
+    
     lr_scheduler = get_scheduler(
         name="linear",
         optimizer=optimizer,
         num_warmup_steps=num_warmup_steps,
-        num_training_steps=len(train_dataloader) * epochs,
+        num_training_steps=num_training_steps,
     )
     
-    num_training_steps = epochs * len(train_dataloader)
     progress_bar = tqdm(range(num_training_steps))
     
     model.train()
@@ -127,4 +128,4 @@ if __name__ == "__main__":
                     
                     optimizer.zero_grad()
                 
-            progress_bar.update()
+                progress_bar.update()
