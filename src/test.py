@@ -64,9 +64,8 @@ if __name__ == "__main__":
     
     model.train()
     for epoch in range(epochs):
-        for step, batch in enumerate(dataset):
+        for step, batch in enumerate(dataset["train"]):
             model.eval()
-            print(batch)
             rollouts = trainer.generate_rollouts(batch)
             model.train()
             
