@@ -218,7 +218,7 @@ class GRPOTrainer:
         )
         if is_conversational(batch["prompt"][0]):
             completions = []
-            for prompt, completion in zip(prompts, completions_text):
+            for prompt, completion in zip(batch["prompt"], completions_text):
                 bootstrap = (
                     prompt.pop()["content"] if prompt[-1]["role"] == "assistant" else ""
                 )
@@ -241,7 +241,7 @@ class GRPOTrainer:
             }
 
             output_reward_func = reward_func(
-                prompts=prompts, completions=completions, **reward_kwargs
+                prompts=batch["prompt"], completions=completions, **reward_kwargs
             )
 
             # Convert None values to NaN
