@@ -28,11 +28,11 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
 if __name__ == "__main__":
     epochs = 1
     batch_size = 1
-    num_warmup_steps = 1
+    num_warmup_steps = 10
     
     adam_betas = (0.9, 0.98)
     adam_weight_decay = 0.01
-    initial_lr = 3e-5
+    initial_lr = 3e-6
     
     clip_grad_norm = 0.01
     
