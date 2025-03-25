@@ -98,9 +98,7 @@ if __name__ == "__main__":
     )
     
     progress_bar = tqdm(range(num_training_steps))
-    
-    completions_table = wandb.Table(columns=["step", "prompt", "completion"])
-    
+        
     policy.train()
     for epoch in range(epochs):
         for step, batch in enumerate(train_dataloader):
@@ -119,11 +117,14 @@ if __name__ == "__main__":
                         completions = rollouts["metrics"]["completions"]
                         rollouts["metrics"]["completions"] = None
                         
+                        completions_table = wandb.Table(columns=["step", "prompt", "completion"])
+
+                        
                         for completion in completions:
                             completions_table.add_data(step, batch["prompt"][0], completion)
                         
                         wandb.log(metrics)
-                        wandb.log({"completions": completions_table})
+                        wandb.log({f"completions/step{step}/it{i}": completions_table})
                     
                     accelerator.backward(loss)
                     accelerator.clip_grad_norm_(
