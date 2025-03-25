@@ -10,7 +10,6 @@ from transformers import (
 import torch
 import warnings
 import torch.nn as nn
-import wandb
 from typing import Callable
 from accelerate import Accelerator
 from accelerate.utils import broadcast_object_list, gather, gather_object, is_peft_model, set_seed
@@ -128,6 +127,8 @@ class GRPOTrainer:
             if "prompt" not in row:
                 raise KeyError("Dataset must include 'prompt' column.")
 
+        metrics = {}
+
         prompts = [apply_chat_template(x["prompt"], self.tokenizer) for x in batch]
 
         # process with tokenizer, returns dict
@@ -163,7 +164,7 @@ class GRPOTrainer:
         # calculate index of the first EOS token in each sequence in the batch
         eos_idx = torch.full(
             (is_eos.size(0),),  # batch size
-            is_eos.size(1),  # max seq. length
+            is_eos.size(1),     # max seq. length
             dtype=torch.long,
             device=self.device,
         )
@@ -296,6 +297,19 @@ class GRPOTrainer:
             (self.accelerator.process_index + 1) * len(prompts),
         )
         advantages = advantages[process_slice]
+        
+        if self.accelerator.is_main_process:
+            # metrics!
+            reward_metrics = {}
+            for i, func_rewards in enumerate(rewards_per_func):
+                reward_metrics[self.reward_funcs[i].__name__] = {
+                    "mean": func_rewards.mean().item(),
+                    "std": func_rewards.std().item(),
+                    "min": func_rewards.min().item(),
+                    "max": func_rewards.max().item()
+                }
+            
+            metrics["rewards"] = reward_metrics
 
         return {
             "prompt_ids": prompt_ids,
@@ -305,14 +319,13 @@ class GRPOTrainer:
             "old_per_token_logps": old_per_token_logps,
             "ref_per_token_logps": ref_per_token_logps,
             "advantages": advantages,
+            "metrics": metrics,
         }
 
     def compute_loss(
-        self, inputs, return_outputs=False, num_items_in_batch=None
+        self, inputs
     ):
-        if return_outputs:
-            raise ValueError("The GRPOTrainer does not support returning outputs")
-        # Compute the per-token log probabilities for the model
+        metrics = inputs["metrics"]
 
         prompt_ids, prompt_mask = inputs["prompt_ids"], inputs["prompt_mask"]
         completion_ids, completion_mask = (
@@ -365,4 +378,23 @@ class GRPOTrainer:
         # clip_ratio = (is_clipped * completion_mask).sum() / completion_mask.sum()
         # self._metrics[mode]["clip_ratio"].append(self.accelerator.gather_for_metrics(clip_ratio).mean().item())
 
-        return loss
+        if self.accelerator.is_main_process:
+            metrics["loss_stats"] = {
+                "loss": loss.item(),
+                "mean_advantage": advantages.mean().item(),
+                "policy_ratio": {
+                    "mean": coef_1.mean().item(),
+                    "min": coef_1.min().item(),
+                    "max": coef_2.max().item()
+                }
+            }
+            
+            if self.beta != 0.0:
+                mean_kl = (per_token_kl * completion_mask).sum() / completion_mask.sum()
+                metrics["loss_stats"]["mean_kl"] = mean_kl.item()
+            
+            is_clipped = (per_token_loss1 < per_token_loss2).float()
+            clip_ratio = (is_clipped * completion_mask).sum() / completion_mask.sum()
+            metrics["loss_stats"]["clip_ratio"] = clip_ratio.item()
+
+        return loss, metrics

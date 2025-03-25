@@ -9,7 +9,6 @@ from aurl import GRPOTrainer
 
 def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
     rewards = []
-    print(completions[0])
     for completion in completions:
         reward = 0.0
         for c in completion:
@@ -20,8 +19,6 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
                 reward += 2.0
         
         rewards.append(reward / len(completion))
-    
-    print(rewards)
     
     return rewards
 
@@ -90,9 +87,9 @@ if __name__ == "__main__":
             model.train()
             
             with accelerator.accumulate(model):
-                loss = trainer.compute_loss(rollouts)
+                loss, metrics = trainer.compute_loss(rollouts)
                 
-                print("Loss:", loss)
+                print(metrics["loss_stats"]["loss"])
                 
                 accelerator.backward(loss)
                 accelerator.clip_grad_norm_(
