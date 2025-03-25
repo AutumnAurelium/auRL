@@ -11,10 +11,15 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
     rewards = []
     print(completions[0])
     for completion in completions:
-        if answer[0] in completion:
-            rewards.append(1.0)
-        else:
-            rewards.append(0.0)
+        reward = 0.0
+        for c in completion:
+            if c.upper() == c:
+                reward += 1.0
+            
+            if c == "!":
+                reward += 2.0
+        
+        rewards.append(reward)
     
     print(rewards)
     
