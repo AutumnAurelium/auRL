@@ -52,7 +52,7 @@ def is_conversational(prompt: any) -> bool:
 # TODO: is this also sufficient
 def apply_chat_template(prompt: any, tokenizer: PreTrainedTokenizer) -> str:
     if is_conversational(prompt):
-        return tokenizer.apply_chat_template(prompt)
+        return tokenizer.apply_chat_template(prompt, tokenize=False)
     else:
         return prompt
 
