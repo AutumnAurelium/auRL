@@ -82,16 +82,16 @@ class GRPOTrainer:
             self.generation_config = generation_config
         else:
             self.generation_config = GenerationConfig(
-                max_new_tokens=self.max_completion_length,
+                max_new_tokens=512,
                 do_sample=True,
                 pad_token_id=tokenizer.pad_token_id,
                 bos_token_id=tokenizer.bos_token_id,
                 eos_token_id=tokenizer.eos_token_id,
                 temperature=self.temperature,
-                top_p=self.top_p,
-                top_k=self.top_k,
-                min_p=self.min_p,
-                repetition_penalty=self.repetition_penalty
+                top_p=1.0,
+                top_k=50,
+                min_p=0.0,
+                repetition_penalty=1.0
             )
 
     def _per_token_logprobs(
