@@ -6,7 +6,8 @@ import bitsandbytes as bnb
 
 from aurl import GRPOTrainer
 
-def gsm8k_reward(output: str, answer: str):
+def gsm8k_reward(output: str, answer: str, **kwargs):
+    print(kwargs)
     if f"<answer>{answer}</answer>" in output:
         return 1.0
     else:
