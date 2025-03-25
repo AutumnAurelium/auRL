@@ -58,7 +58,8 @@ if __name__ == "__main__":
             }
         )
     
-    model = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+    policy = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+    old_policy = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
     ref = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
     tok = AutoTokenizer.from_pretrained(model_name)
     
@@ -73,7 +74,7 @@ if __name__ == "__main__":
     
     trainer = GRPOTrainer(
         accelerator,
-        model,
+        policy,
         ref,
         tok,
         [gsm8k_reward],
@@ -81,7 +82,7 @@ if __name__ == "__main__":
     )
     
     optimizer = bnb.optim.Adam8bit(
-        model.parameters(),
+        policy.parameters(),
         lr=initial_lr,
         betas=(adam_betas[0], adam_betas[1]),
         weight_decay=adam_weight_decay,
@@ -98,21 +99,18 @@ if __name__ == "__main__":
     
     progress_bar = tqdm(range(num_training_steps))
     
-    model.train()
+    policy.train()
     for epoch in range(epochs):
         for step, batch in enumerate(train_dataloader):
-            old_logps = None
+            with accelerator.main_process_first():
+                old_policy.load_state_dict(policy.state_dict())
+            
             for i in range(trainer.num_iterations):
-                model.eval()
-                rollouts = trainer.generate_rollouts(batch, generate_old_logps=(i == 0))
-                model.train()
+                policy.eval()
+                rollouts = trainer.generate_rollouts(batch, old_model=old_policy, iteration=i)
+                policy.train()
                 
-                if i == 0:
-                    old_logps = rollouts["old_per_token_logps"]
-                else:
-                    rollouts["old_per_token_logps"] = old_logps
-                
-                with accelerator.accumulate(model):
+                with accelerator.accumulate(policy):
                     loss, metrics = trainer.compute_loss(rollouts)
                     
                     if accelerator.is_main_process:
@@ -120,7 +118,7 @@ if __name__ == "__main__":
                     
                     accelerator.backward(loss)
                     accelerator.clip_grad_norm_(
-                        model.parameters(), clip_grad_norm
+                        policy.parameters(), clip_grad_norm
                     )
                     
                     optimizer.step()
