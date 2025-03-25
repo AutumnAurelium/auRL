@@ -8,9 +8,9 @@ from aurl import GRPOTrainer
 
 def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
     if f"<answer>{answer}</answer>" in completions[0]:
-        return 1.0
+        return [1.0]
     else:
-        return 0.0
+        return [0.0]
 
 if __name__ == "__main__":
     epochs = 1
