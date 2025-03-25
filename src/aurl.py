@@ -226,7 +226,7 @@ class GRPOTrainer:
             completions = completions_text
 
         rewards_per_func = torch.zeros(
-            len(prompts), len(self.reward_funcs), device=self.device
+            len(completions), len(self.reward_funcs), device=self.device
         )
         for i, reward_func in enumerate(self.reward_funcs):
             # Repeat all input columns (but "prompt" and "completion") to match the number of generations
