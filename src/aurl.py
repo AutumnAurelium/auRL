@@ -123,7 +123,7 @@ class GRPOTrainer:
         )  # compute logprobs for the input tokens
 
     def generate_rollouts(self, batch: list[dict]):
-        if "prompt" not in row:
+        if "prompt" not in batch:
             raise KeyError("Dataset must include 'prompt' column.")
 
         metrics = {}
