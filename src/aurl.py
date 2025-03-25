@@ -182,7 +182,7 @@ class GRPOTrainer:
         logits_to_keep = completion_ids.size(1)
 
         with torch.no_grad():
-            # When using num_iterations == 1, old_per_token_logps == per_token_logps, so we can skip it's
+            # When using num_iterations == 1, old_per_token_logps == per_token_logps, so we can skip its
             # computation here, and use per_token_logps.detach() instead.
             if self.num_iterations > 1:
                 old_per_token_logps = self._per_token_logprobs(

@@ -76,7 +76,8 @@ if __name__ == "__main__":
         model,
         ref,
         tok,
-        [gsm8k_reward]
+        [gsm8k_reward],
+        num_iterations=4
     )
     
     optimizer = bnb.optim.Adam8bit(
