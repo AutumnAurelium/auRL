@@ -231,8 +231,6 @@ class GRPOTrainer:
             reward_kwargs = {
                 key: [example[key] for example in batch] for key in additional_cols
             }
-            
-            print()
 
             output_reward_func = reward_func(
                 prompts=prompts, completions=completions, **reward_kwargs
