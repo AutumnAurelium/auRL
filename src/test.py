@@ -67,7 +67,7 @@ if __name__ == "__main__":
         for step, batch in enumerate(dataset):
             model.eval()
             print(batch)
-            rollouts = trainer.generate_rollouts(batch)
+            rollouts = trainer.generate_rollouts([batch])
             model.train()
             
             with accelerator.accumulate(model):
