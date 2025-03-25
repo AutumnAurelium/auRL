@@ -140,8 +140,8 @@ class GRPOTrainer:
         )
 
         # Get original prompt tensors
-        prompt_ids = prompt_processed["input_ids"]
-        prompt_mask = prompt_processed["attention_mask"]
+        prompt_ids = prompt_processed["input_ids"].to(self.device)
+        prompt_mask = prompt_processed["attention_mask"].to(self.device)
         
         # Repeat each prompt self.num_generations times
         prompt_ids = torch.repeat_interleave(prompt_ids, self.num_generations, dim=0)
