@@ -98,7 +98,7 @@ if __name__ == "__main__":
     
     model.train()
     for epoch in range(epochs):
-        for step, batch in enumerate(dataset):
+        for step, batch in enumerate(train_dataloader):
             model.eval()
             rollouts = trainer.generate_rollouts([batch])
             model.train()
@@ -107,7 +107,6 @@ if __name__ == "__main__":
                 loss, metrics = trainer.compute_loss(rollouts)
                 
                 if accelerator.is_main_process:
-                    print("Loss: ", loss.item())
                     wandb.log(metrics)
                 
                 accelerator.backward(loss)
