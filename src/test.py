@@ -6,12 +6,11 @@ import bitsandbytes as bnb
 
 from aurl import GRPOTrainer
 
-def gsm8k_reward(output: str, answer: str, **kwargs):
+def gsm8k_reward(prompts: str, completions: str, **kwargs):
+    print(prompts)
+    print(completions)
     print(kwargs)
-    if f"<answer>{answer}</answer>" in output:
-        return 1.0
-    else:
-        return 0.0
+    return 1.0
 
 if __name__ == "__main__":
     epochs = 1
