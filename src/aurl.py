@@ -145,7 +145,7 @@ class GRPOTrainer:
         # TODO: change to support gather-params-for-generation args
         with unwrap_model_for_generation(self.model, self.accelerator, False) as unwrapped_model:
             unwrapped_model: PreTrainedModel
-            prompt_completion_ids = unwrapped_model.generate(prompt_processed, self.generation_config)
+            prompt_completion_ids = unwrapped_model.generate(prompt_ids, attention_mask=prompt_mask, generation_config=self.generation_config)
 
         # separate it out
         prompt_length = prompt_ids.size(1)
