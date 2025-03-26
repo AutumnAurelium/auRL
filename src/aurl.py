@@ -150,13 +150,10 @@ class GRPOTrainer:
         prompt_ids = torch.repeat_interleave(prompt_ids, self.num_generations, dim=0)
         prompt_mask = torch.repeat_interleave(prompt_mask, self.num_generations, dim=0)
 
-
         # TODO: change to support gather-params-for-generation args
         with unwrap_model_for_generation(self.model, self.accelerator, False) as unwrapped_model:
             unwrapped_model: PreTrainedModel
             prompt_completion_ids = unwrapped_model.generate(prompt_ids, attention_mask=prompt_mask, generation_config=self.generation_config)
-
-        print(prompt_completion_ids.shape)
 
         # separate it out
         prompt_length = prompt_ids.size(1)
@@ -219,6 +216,9 @@ class GRPOTrainer:
         completions_text = self.tokenizer.batch_decode(
             completion_ids, skip_special_tokens=True
         )
+        
+        print(completions_text)
+        
         if is_conversational(batch["prompt"][0]):
             completions = []
             print(prompts)
