@@ -131,9 +131,10 @@ if __name__ == "__main__":
                         
                         completions_table = wandb.Table(columns=["step", "prompt", "completion"])
 
-                        
                         for completion in completions:
                             completions_table.add_data(step, batch["prompt"][0], completion)
+                        
+                        print("logged", len(completions), "completions")
                         
                         wandb.log(metrics)
                         wandb.log({f"completions/{progress_bar.n}": completions_table})
