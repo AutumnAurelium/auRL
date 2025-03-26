@@ -382,7 +382,7 @@ class GRPOTrainer:
 
         # is_clipped = (per_token_loss1 < per_token_loss2).float()
         # clip_ratio = (is_clipped * completion_mask).sum() / completion_mask.sum()
-        # self._metrics[mode]["clip_ratio"].append(self.accelerator.gather_for_metrics(clip_ratio).mean().item())
+        # self._metrics[mode]["clip_ratio"].appe    nd(self.accelerator.gather_for_metrics(clip_ratio).mean().item())
 
         if self.accelerator.is_main_process:
             metrics["loss_stats"] = {
@@ -391,7 +391,7 @@ class GRPOTrainer:
                 "policy_ratio": {
                     "mean": coef_1.mean().item(),
                     "min": coef_1.min().item(),
-                    "max": coef_2.max().item()
+                    "max": coef_1.max().item()
                 }
             }
             
