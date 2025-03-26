@@ -106,13 +106,15 @@ if __name__ == "__main__":
             with accelerator.main_process_first():
                 old_policy.load_state_dict(policy.state_dict())
             
+            # if the prompt is a JSON string, convert it to a list/dict
+            # if it fails to parse, use as a normal string
             try:
                 prompts = []
                 for prompt in batch["prompt"]:
                     prompts.append(json.loads(prompt))
                 
                 batch["prompt"] = prompts
-            except:
+            except Exception as _:
                 pass
             
             for i in range(trainer.num_iterations):
