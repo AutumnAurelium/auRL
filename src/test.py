@@ -78,7 +78,7 @@ if __name__ == "__main__":
         ref,
         tok,
         [gsm8k_reward],
-        num_iterations=4
+        num_iterations=2
     )
     
     optimizer = bnb.optim.Adam8bit(
@@ -103,6 +103,7 @@ if __name__ == "__main__":
     for epoch in range(epochs):
         for step, batch in enumerate(train_dataloader):
             with accelerator.main_process_first():
+                print("new step, loading old policy")
                 old_policy.load_state_dict(policy.state_dict())
             
             # if the prompt is a JSON string, convert it to a list/dict
