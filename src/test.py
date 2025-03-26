@@ -136,7 +136,7 @@ if __name__ == "__main__":
                             completions_table.add_data(step, batch["prompt"][0], completion)
                         
                         wandb.log(metrics)
-                        wandb.log({f"completions/step{step}/it{i}": completions_table})
+                        wandb.log({f"completions/{progress_bar.n}": completions_table})
                     
                     accelerator.backward(loss)
                     accelerator.clip_grad_norm_(
