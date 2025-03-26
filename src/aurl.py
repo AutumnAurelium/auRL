@@ -188,9 +188,10 @@ class GRPOTrainer:
             # When using num_iterations == 1, old_per_token_logps == per_token_logps, so we can skip its
             # computation here, and use per_token_logps.detach() instead.
             if iteration > 0:
-                old_per_token_logps = self._per_token_logprobs(
-                    old_model, prompt_completion_ids, attention_mask, logits_to_keep
-                )
+                with unwrap_model_for_generation(old_model, self.accelerator, False) as unwrapped_old_model:
+                    old_per_token_logps = self._per_token_logprobs(
+                        unwrapped_old_model, prompt_completion_ids, attention_mask, logits_to_keep
+                    )
             else:
                 old_per_token_logps = None
 
