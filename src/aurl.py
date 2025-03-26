@@ -150,6 +150,8 @@ class GRPOTrainer:
         prompt_ids = torch.repeat_interleave(prompt_ids, self.num_generations, dim=0)
         prompt_mask = torch.repeat_interleave(prompt_mask, self.num_generations, dim=0)
 
+        print(prompt_ids.shape)
+
         # TODO: change to support gather-params-for-generation args
         with unwrap_model_for_generation(self.model, self.accelerator, False) as unwrapped_model:
             unwrapped_model: PreTrainedModel
