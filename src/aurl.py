@@ -220,6 +220,7 @@ class GRPOTrainer:
         if is_conversational(batch["prompt"][0]):
             completions = []
             for prompt, completion in zip([batch["prompt"]] * len(completions_text), completions_text):
+                print(prompt)
                 bootstrap = (
                     prompt.pop()["content"] if prompt[-1]["role"] == "assistant" else ""
                 )
