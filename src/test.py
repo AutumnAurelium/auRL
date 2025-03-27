@@ -9,20 +9,17 @@ import json
 from aurl import GRPOTrainer
 import re
 
-def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
+def gsm8k_reward(prompts: list[str], completions: list[str], answer: list[str]):
     rewards = []
     for completion in completions:
         text = completion[-1]["content"]
         
-        print(answer in text)
-        
         no_whitespace = re.sub(r"\s+", "", text)
         
         reward = 0.0
-        if f"\\boxed{{{answer}}}" in no_whitespace:
-            print("she did it!")
+        if f"\\boxed{{{answer[0]}}}" in no_whitespace:
             reward = 1.0
-        elif str(answer) in no_whitespace:
+        elif str(answer[0]) in no_whitespace:
             reward = 0.5
         elif re.search(r"^\\boxed{.*}$", no_whitespace):
             reward = 0.5
