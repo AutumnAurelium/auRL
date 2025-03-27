@@ -144,6 +144,10 @@ if __name__ == "__main__":
                         completions = rollouts["metrics"]["completions"]
                         rollouts["metrics"]["completions"] = None
                         
+                        # log metrics and completions
+                        
+                        other_keys = [k for k in batch.keys() if k != "prompt"]
+                        
                         data = []
 
                         for completion in completions:
@@ -151,10 +155,10 @@ if __name__ == "__main__":
                                 step,
                                 batch["prompt"][0],
                                 completion
-                            ])
+                            ] + [batch[k][0] for k in other_keys])
                         
                         artifact = wandb.Artifact(completion_artifact_name, type="table")
-                        artifact.add(wandb.Table(columns=["step", "prompt", "completion"], data=data), "completions")
+                        artifact.add(wandb.Table(columns=["step", "prompt", "completion"] + other_keys, data=data), "completions")
                         wandb.log(metrics, step=progress_bar.n)
                         wandb.log_artifact(artifact, name=f"completions/{progress_bar.n}")
                     
