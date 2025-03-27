@@ -17,6 +17,7 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
         no_whitespace = re.sub(r"\s+", "", text)
         
         if f"\\boxed{{{answer}}}" in no_whitespace:
+            print("she did it!")
             reward = 1.0
         elif str(answer) in no_whitespace:
             reward = 0.5
@@ -25,7 +26,7 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
         else:
             reward = 0.0
         
-        rewards.append(reward / len(completion))
+        rewards.append(reward)
     
     return rewards
 
