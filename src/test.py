@@ -8,6 +8,7 @@ import wandb
 import json
 from aurl import GRPOTrainer
 import re
+
 def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
     rewards = []
     for completion in completions:
@@ -29,6 +30,7 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
 GSM8K_PROMPT = """The following is a grade-school math problem. Reason through it step-by-step and solve it.
 When you're done, return your answer in the following format:
 <answer>YOUR ANSWER GOES HERE</answer>
+If you do not answer in the above format, the question will be marked as incorrect.
 
 {}"""
 
