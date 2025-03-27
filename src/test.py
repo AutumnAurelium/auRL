@@ -110,6 +110,8 @@ if __name__ == "__main__":
     )
     
     progress_bar = tqdm(range(num_training_steps))
+    
+    completion_artifact_name = f"completions_{wandb.util.generate_id()}"
         
     policy.train()
     for epoch in range(epochs):
@@ -149,7 +151,7 @@ if __name__ == "__main__":
                                 completion
                             ])
                         
-                        artifact = wandb.Artifact("completions", type="table")
+                        artifact = wandb.Artifact(completion_artifact_name, type="table")
                         artifact.add(wandb.Table(columns=["step", "prompt", "completion"], data=data), "completions")
                         wandb.log(metrics, step=progress_bar.n)
                         wandb.log_artifact(artifact, name=f"completions/{progress_bar.n}")
