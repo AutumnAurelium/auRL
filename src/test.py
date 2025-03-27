@@ -135,6 +135,7 @@ if __name__ == "__main__":
                             completions_table.add_data(step, batch["prompt"][0], completion)
                         
                         print("logged", len(completions), "completions")
+                        print(completions)
                         
                         wandb.log(metrics)
                         wandb.log({f"completions/{progress_bar.n}": completions_table})
