@@ -28,7 +28,9 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
 
 GSM8K_PROMPT = """The following is a grade-school math problem. Reason through it step-by-step and solve it.
 When you're done, return your answer in the following format:
-<answer>{answer}</answer>"""
+<answer>YOUR ANSWER GOES HERE</answer>
+
+{}"""
 
 if __name__ == "__main__":
     epochs = 1
