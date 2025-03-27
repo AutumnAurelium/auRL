@@ -129,20 +129,20 @@ if __name__ == "__main__":
                         completions = rollouts["metrics"]["completions"]
                         rollouts["metrics"]["completions"] = None
                         
-                        completions_table = wandb.Table(columns=["step", "prompt", "completion"])
+                        data = []
 
                         for completion in completions:
-                            completions_table.add_data(
-                                step=step,
-                                prompt=batch["prompt"][0],
-                                completion=completion
-                            )
+                            data.append([
+                                step,
+                                batch["prompt"][0],
+                                completion
+                            ])
                         
                         print("logged", len(completions), "completions")
                         print(completions)
                         
                         wandb.log(metrics)
-                        wandb.log({f"completions/{progress_bar.n}": completions_table})
+                        wandb.log({f"completions/{progress_bar.n}": wandb.Table(columns=["step", "prompt", "completion"], data=data)})
                     
                     accelerator.backward(loss)
                     accelerator.clip_grad_norm_(
