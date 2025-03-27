@@ -27,12 +27,10 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
     
     return rewards
 
-GSM8K_PROMPT = """The following is a grade-school math problem. Reason through it step-by-step and solve it.
+GSM8K_SYSPROMPT = """The following is a grade-school math problem. Reason through it step-by-step and solve it.
 When you're done, return your answer in the following format:
 <answer>YOUR ANSWER GOES HERE</answer>
-If you do not answer in the above format, the question will be marked as incorrect.
-
-{}"""
+If you do not answer in the above format, the question will be marked as incorrect."""
 
 if __name__ == "__main__":
     epochs = 1
@@ -75,7 +73,10 @@ if __name__ == "__main__":
     tok = AutoTokenizer.from_pretrained(model_name)
     
     dataset = load_dataset("json", data_files="data/gsm8k.jsonl")["train"].map(lambda x: {
-        "prompt": json.dumps([{"role": "user", "content": GSM8K_PROMPT.format(x["prompt"])}]),
+        "prompt": json.dumps([
+            {"role": "system", "content": GSM8K_SYSPROMPT},
+            {"role": "user", "content": x["prompt"]}
+        ]),
         "answer": x["answer"]
     })
     
