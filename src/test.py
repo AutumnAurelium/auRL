@@ -7,21 +7,28 @@ from tqdm.auto import tqdm
 import wandb
 import json
 from aurl import GRPOTrainer
-
+import re
 def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
     rewards = []
     for completion in completions:
-        reward = 0.0
-        for c in completion[-1]["content"]:
-            if c.isalpha() and c.upper() == c:
-                reward += 1.0
-            
-            if c == "!":
-                reward += 2.0
+        text = completion[-1]["content"]
+        
+        no_whitespace = re.sub(r"\s+", "", text)
+        
+        if f"<answer>{answer}</answer>" in no_whitespace:
+            reward = 1.0
+        elif re.search(r"^<answer>.*</answer>$", no_whitespace):
+            reward = 0.5
+        else:
+            reward = 0.0
         
         rewards.append(reward / len(completion))
     
     return rewards
+
+GSM8K_PROMPT = """The following is a grade-school math problem. Reason through it step-by-step and solve it.
+When you're done, return your answer in the following format:
+<answer>{answer}</answer>"""
 
 if __name__ == "__main__":
     epochs = 1
@@ -64,7 +71,7 @@ if __name__ == "__main__":
     tok = AutoTokenizer.from_pretrained(model_name)
     
     dataset = load_dataset("json", data_files="data/gsm8k.jsonl")["train"].map(lambda x: {
-        "prompt": json.dumps([{"role": "user", "content": "Tell a story while using as many capital letters and exclamation points as possible:\n\n"}]),
+        "prompt": json.dumps([{"role": "user", "content": GSM8K_PROMPT.format(x["prompt"])}]),
         "answer": x["answer"]
     })
     
