@@ -14,6 +14,8 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
     for completion in completions:
         text = completion[-1]["content"]
         
+        print(text)
+        
         no_whitespace = re.sub(r"\s+", "", text)
         
         if f"\\boxed{{{answer}}}" in no_whitespace:
