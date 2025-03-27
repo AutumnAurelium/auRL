@@ -47,7 +47,7 @@ class GRPOTrainer:
         tokenizer: PreTrainedTokenizerBase,
         reward_funcs: list[Callable],
         num_iterations=1,
-        temperature=0.5,
+        temperature=0.7,
         num_generations=8,
         beta=0.05,
         epsilon=0.2,
@@ -87,8 +87,8 @@ class GRPOTrainer:
                 bos_token_id=tokenizer.bos_token_id,
                 eos_token_id=tokenizer.eos_token_id,
                 temperature=self.temperature,
-                top_p=1.0,
-                top_k=50,
+                top_p=0.8,
+                top_k=20,
                 min_p=0.0,
                 repetition_penalty=1.0
             )
