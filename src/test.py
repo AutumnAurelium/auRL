@@ -18,6 +18,8 @@ def gsm8k_reward(prompts: list[str], completions: list[str], answer: str):
         
         if f"\\boxed{{{answer}}}" in no_whitespace:
             reward = 1.0
+        elif str(answer) in no_whitespace:
+            reward = 0.5
         elif re.search(r"^\\boxed{.*}$", no_whitespace):
             reward = 0.5
         else:
