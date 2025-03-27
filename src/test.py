@@ -138,8 +138,10 @@ if __name__ == "__main__":
                                 completion
                             ])
                         
-                        metrics["completions"] = wandb.Table(columns=["step", "prompt", "completion"], data=data)
-                        wandb.log(metrics)
+                        artifact = wandb.Artifact("completions", type="table")
+                        artifact.add(wandb.Table(columns=["step", "prompt", "completion"], data=data), "completions")
+                        wandb.log(metrics, step=progress_bar.n)
+                        wandb.log_artifact(artifact, step=progress_bar.n)
                     
                     accelerator.backward(loss)
                     accelerator.clip_grad_norm_(
