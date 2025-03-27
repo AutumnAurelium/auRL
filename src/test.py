@@ -138,7 +138,7 @@ if __name__ == "__main__":
                                 completion
                             ])
                         
-                        metrics["completions"] = wandb.Table(columns=["step", "prompt", "completion"], data=data)
+                        metrics[f"completions/{progress_bar.n}"] = wandb.Table(columns=["step", "prompt", "completion"], data=data)
                         wandb.log(metrics)
                     
                     accelerator.backward(loss)
