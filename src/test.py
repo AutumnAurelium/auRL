@@ -45,7 +45,7 @@ if __name__ == "__main__":
     
     clip_grad_norm = 0.01
     
-    model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+    model_name = "Qwen/Qwen2.5-3B-Instruct"
     
     accelerator = Accelerator(
         gradient_accumulation_steps=1,
