@@ -96,7 +96,7 @@ SUBJECTIVE_REWARD_PROMPT = """You will receive a poem written by an LLM. Please 
 - **60-69**: Developing poetry with significant room for improvement
 - **Below 60**: Needs fundamental reconsideration
 
-Evalaute the poem, and then reply with the score in an XML tag, like this:
+Reply only with the score in an XML tag, like this:
 
 <score>93</score>"""
 
