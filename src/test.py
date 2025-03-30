@@ -16,11 +16,11 @@ if __name__ == "__main__":
     batch_size = 1
     num_warmup_steps = 10
     
-    adam_betas = (0.9, 0.98)
-    adam_weight_decay = 0.00
-    initial_lr = 8e-6
+    adam_betas = (0.9, 0.999)
+    adam_weight_decay = 0.01
+    initial_lr = 1e-5
     
-    clip_grad_norm = 0.2
+    clip_grad_norm = 1.0
     
     model_name = "Qwen/Qwen2.5-1.5B-Instruct"
     
