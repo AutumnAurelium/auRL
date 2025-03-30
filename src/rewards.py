@@ -62,8 +62,8 @@ def letter_reward(prompts: list[str], completions: list[str]):
         
         for c in poem:
             if c.isupper():
-                score += longest_stride
                 longest_stride += 1
+                score += longest_stride
             else:
                 longest_stride = 0
         
