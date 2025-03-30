@@ -67,7 +67,10 @@ def letter_reward(prompts: list[str], completions: list[str]):
             else:
                 longest_stride = 0
         
-        rewards.append(score / len(poem))
+        if len(poem) > 0:
+            rewards.append(score / len(poem))
+        else:
+            rewards.append(0)
         
     return rewards
 
