@@ -17,8 +17,8 @@ if __name__ == "__main__":
     num_warmup_steps = 10
     
     adam_betas = (0.9, 0.98)
-    adam_weight_decay = 0.01
-    initial_lr = 1e-5
+    adam_weight_decay = 0.00
+    initial_lr = 8e-6
     
     clip_grad_norm = 0.2
     
@@ -71,7 +71,8 @@ if __name__ == "__main__":
         ref,
         tok,
         [letter_reward],
-        num_iterations=2
+        num_iterations=2,
+        beta=0
     )
     
     optimizer = bnb.optim.Adam8bit(
