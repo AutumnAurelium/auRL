@@ -5,7 +5,7 @@ import re
 
 load_dotenv()
 
-client = openai.OpenAI(api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com/v1")
+client = openai.OpenAI(api_key=os.getenv("API_KEY"), base_url="https://openrouter.ai/api/v1")
 
 SUBJECTIVE_REWARD_PROMPT = """You will receive a poem written by an LLM. Please evaluate the poem based on the below rubric:
 
@@ -158,7 +158,7 @@ def subjective_reward(prompts: list[str], completions: list[str]):
     for completion in completions:
         poem = completion[-1]["content"]
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model="deepseek/deepseek-chat-v3-0324",
             messages=[
                 {"role": "system", "content": SUBJECTIVE_REWARD_PROMPT},
                 {"role": "user", "content": f"{poem}"}
