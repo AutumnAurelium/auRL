@@ -1,11 +1,3 @@
-import openai
-from dotenv import load_dotenv
-import os
-import re
-
-load_dotenv()
-
-client = openai.OpenAI(api_key=os.getenv("API_KEY"), base_url="https://openrouter.ai/api/v1")
 
 poem_topics = [
     "dawn in the mountains",
