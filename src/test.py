@@ -7,7 +7,7 @@ from tqdm.auto import tqdm
 import wandb
 import json
 from aurl import GRPOTrainer
-from rewards import subjective_reward, poem_topics
+from rewards import letter_reward, poem_topics
 import random
 POETRY_PROMPT = """You are a poet. Write a short, impactful poem on the subject requested."""
 
@@ -70,7 +70,7 @@ if __name__ == "__main__":
         policy,
         ref,
         tok,
-        [subjective_reward],
+        [letter_reward],
         num_iterations=2
     )
     
