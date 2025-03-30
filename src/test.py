@@ -72,7 +72,7 @@ if __name__ == "__main__":
         tok,
         [letter_reward],
         num_iterations=2,
-        beta=0
+        beta=0.1
     )
     
     optimizer = bnb.optim.Adam8bit(
