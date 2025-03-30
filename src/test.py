@@ -1,4 +1,4 @@
-from datasets import load_dataset
+from datasets import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, get_scheduler
 from accelerate import Accelerator
 from torch.utils.data import DataLoader
@@ -7,31 +7,9 @@ from tqdm.auto import tqdm
 import wandb
 import json
 from aurl import GRPOTrainer
-import re
-
-def gsm8k_reward(prompts: list[str], completions: list[str], answer: list[str]):
-    rewards = []
-    for completion in completions:
-        text = completion[-1]["content"]
-        
-        no_whitespace = re.sub(r"\s+", "", text)
-        
-        reward = 0.0
-        if f"\\boxed{{{answer[0]}}}" in no_whitespace:
-            reward = 1.0
-        elif str(answer[0]) in no_whitespace:
-            reward = 0.5
-        elif re.search(r"^\\boxed{.*}$", no_whitespace):
-            reward = 0.5
-        
-        rewards.append(reward)
-    
-    return rewards
-
-GSM8K_SYSPROMPT = """The following is a grade-school math problem. Reason through it step-by-step and solve it.
-When you're done, return your answer in the following format:
-\\boxed{YOUR ANSWER GOES HERE}
-If you do not answer in the above format, the question will be marked as incorrect."""
+from rewards import subjective_reward, poem_topics
+import random
+POETRY_PROMPT = """You are a poet. Write a short, impactful poem on the subject requested."""
 
 if __name__ == "__main__":
     epochs = 1
@@ -40,9 +18,9 @@ if __name__ == "__main__":
     
     adam_betas = (0.9, 0.98)
     adam_weight_decay = 0.01
-    initial_lr = 3e-6
+    initial_lr = 1e-6
     
-    clip_grad_norm = 0.01
+    clip_grad_norm = 0.2
     
     model_name = "Qwen/Qwen2.5-1.5B-Instruct"
     
@@ -73,13 +51,15 @@ if __name__ == "__main__":
     ref = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
     tok = AutoTokenizer.from_pretrained(model_name)
     
-    dataset = load_dataset("json", data_files="data/gsm8k.jsonl")["train"].map(lambda x: {
-        "prompt": json.dumps([
-            {"role": "system", "content": GSM8K_SYSPROMPT},
-            {"role": "user", "content": x["prompt"]}
-        ]),
-        "answer": x["answer"]
-    })
+    dataset = Dataset.from_list([
+        {
+            "prompt": json.dumps([
+                {"role": "system", "content": POETRY_PROMPT},
+                {"role": "user", "content": f"Please write a poem about '{random.choice(poem_topics)}'"}
+            ])
+        }
+        for _ in range(1000)
+    ])
     
     train_dataloader = DataLoader(
         dataset, batch_size=batch_size, shuffle=True
@@ -90,7 +70,7 @@ if __name__ == "__main__":
         policy,
         ref,
         tok,
-        [gsm8k_reward],
+        [subjective_reward],
         num_iterations=2
     )
     
@@ -104,7 +84,7 @@ if __name__ == "__main__":
     num_training_steps = epochs * len(train_dataloader) * trainer.num_iterations
     
     lr_scheduler = get_scheduler(
-        name="linear",
+        name="constant_with_warmup",
         optimizer=optimizer,
         num_warmup_steps=num_warmup_steps,
         num_training_steps=num_training_steps,
@@ -144,11 +124,10 @@ if __name__ == "__main__":
                         rollouts["metrics"]["completions"] = None
                         
                         # log metrics and completions
-                        
                         other_keys = [k for k in batch.keys() if k != "prompt"]
                         
                         data = []
-
+                        
                         for completion in completions:
                             data.append([
                                 step,
