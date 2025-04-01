@@ -1,6 +1,7 @@
 from datasets import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, get_scheduler
 from accelerate import Accelerator
+from accelerate import DeepSpeedPlugin
 from torch.utils.data import DataLoader
 import bitsandbytes as bnb
 from tqdm.auto import tqdm
@@ -9,6 +10,8 @@ import json
 from aurl import GRPOTrainer
 from rewards import letter_reward, poem_topics
 import random
+import os
+
 POETRY_PROMPT = """You are a poet. Write a short, impactful poem on the subject requested."""
 
 if __name__ == "__main__":
@@ -22,12 +25,16 @@ if __name__ == "__main__":
     
     clip_grad_norm = 1.0
     
-    model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+    gradient_accumulation_steps = 2
     
+    model_name = "Qwen/Qwen2.5-7B-Instruct"
+    
+    deepspeed_plugin = DeepSpeedPlugin()
     accelerator = Accelerator(
-        gradient_accumulation_steps=1,
+        gradient_accumulation_steps=gradient_accumulation_steps,
         mixed_precision="bf16",
-        log_with="wandb"
+        log_with="wandb",
+        deepspeed_plugin=deepspeed_plugin
     )
     
     if accelerator.is_main_process:
@@ -64,6 +71,7 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(
         dataset, batch_size=batch_size, shuffle=True
     )
+    train_dataloader = accelerator.prepare(train_dataloader)
     
     trainer = GRPOTrainer(
         accelerator,
@@ -81,6 +89,7 @@ if __name__ == "__main__":
         betas=(adam_betas[0], adam_betas[1]),
         weight_decay=adam_weight_decay,
     )
+    optimizer = accelerator.prepare(optimizer)
     
     num_training_steps = epochs * len(train_dataloader) * trainer.num_iterations
     
@@ -90,7 +99,7 @@ if __name__ == "__main__":
         num_warmup_steps=num_warmup_steps,
         num_training_steps=num_training_steps,
     )
-    
+    lr_scheduler = accelerator.prepare(lr_scheduler)
     progress_bar = tqdm(range(num_training_steps))
     
     completion_artifact_name = f"completions_{wandb.util.generate_id()}"
