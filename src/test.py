@@ -54,8 +54,11 @@ if __name__ == "__main__":
         )
     
     policy = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+    policy = accelerator.prepare(policy)
     old_policy = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+    old_policy = accelerator.prepare(old_policy)
     ref = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+    ref = accelerator.prepare(ref)
     tok = AutoTokenizer.from_pretrained(model_name)
     
     dataset = Dataset.from_list([
