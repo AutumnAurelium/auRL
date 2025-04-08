@@ -68,14 +68,10 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(
         dataset, batch_size=batch_size, shuffle=True
     )
-    train_dataloader = accelerator.prepare(train_dataloader)
     
     policy = AutoModelForCausalLM.from_pretrained(model_name)
-    policy = accelerator.prepare(policy)
     old_policy = AutoModelForCausalLM.from_pretrained(model_name)
-    old_policy = accelerator.prepare(old_policy)
     ref = AutoModelForCausalLM.from_pretrained(model_name)
-    ref = accelerator.prepare(ref)
     tok = AutoTokenizer.from_pretrained(model_name)
     
     trainer = GRPOTrainer(
@@ -94,7 +90,6 @@ if __name__ == "__main__":
         betas=(adam_betas[0], adam_betas[1]),
         weight_decay=adam_weight_decay,
     )
-    optimizer = accelerator.prepare(optimizer)
     
     num_training_steps = epochs * len(train_dataloader) * trainer.num_iterations
     
@@ -104,7 +99,12 @@ if __name__ == "__main__":
         num_warmup_steps=num_warmup_steps,
         num_training_steps=num_training_steps,
     )
-    lr_scheduler = accelerator.prepare(lr_scheduler)
+
+    # Prepare everything together
+    policy, old_policy, ref, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
+        policy, old_policy, ref, optimizer, train_dataloader, lr_scheduler
+    )
+
     progress_bar = tqdm(range(num_training_steps))
     
     completion_artifact_name = f"completions_{wandb.util.generate_id()}"
