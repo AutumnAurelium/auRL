@@ -192,7 +192,7 @@ class GRPOTrainer:
             # When using num_iterations == 1, ßper_token_logps == per_token_logps, so we can skip its
             # computation here, and use per_token_logps.detach() instead.
             if self.num_iterations > 1:
-                with unwrap_model_for_generation(self.policy, self.accelerator, False) as unwrapped_model:
+                with unwrap_model_for_generation(self.policy, self.accelerator, self.ds3_gather_params_for_generation) as unwrapped_model:
                     old_per_token_logps = self._per_token_logprobs(
                         unwrapped_model, prompt_completion_ids, attention_mask, logits_to_keep
                     )
@@ -202,12 +202,10 @@ class GRPOTrainer:
             if self.beta == 0.0:
                 ref_per_token_logps = None
             elif self.ref_policy is not None:
-                ref_per_token_logps = self._per_token_logprobs(
-                    self.ref_policy,
-                    prompt_completion_ids.to(self.ref_policy.device),
-                    attention_mask.to(self.ref_policy.device),
-                    logits_to_keep,
-                )
+                with unwrap_model_for_generation(self.ref_policy, self.accelerator, self.ds3_gather_params_for_generation) as unwrapped_model:
+                    ref_per_token_logps = self._per_token_logprobs(
+                        unwrapped_model, prompt_completion_ids, attention_mask, logits_to_keep
+                    )
             else:
                 warnings.warn("No reference policy provided, but beta is not 0. No KL divergence will be computed.")
                 ref_per_token_logps = None
