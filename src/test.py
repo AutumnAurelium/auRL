@@ -110,6 +110,7 @@ if __name__ == "__main__":
 
     # Update the trainer with the prepared policy model instance
     trainer.model = policy
+    trainer.device = accelerator.device
 
     progress_bar = tqdm(range(num_training_steps))
     
