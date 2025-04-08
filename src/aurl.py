@@ -106,8 +106,8 @@ class GRPOTrainer:
     ):
         # We add 1 to `logits_to_keep` because the last logits of the sequence is later excluded
         logits = model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
+            input_ids=input_ids.to(model.device),
+            attention_mask=attention_mask.to(model.device),
             logits_to_keep=logits_to_keep + 1,
         ).logits
         logits = logits[
