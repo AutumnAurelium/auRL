@@ -2,6 +2,7 @@ from datasets import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, get_scheduler
 from accelerate import Accelerator
 from accelerate import DeepSpeedPlugin
+import accelerate
 from torch.utils.data import DataLoader
 import bitsandbytes as bnb
 from tqdm.auto import tqdm
@@ -28,6 +29,8 @@ if __name__ == "__main__":
     
     model_name = "google/gemma-3-4b-pt"
     
+    accelerate.utils.set_seed(42)
+    
     deepspeed_plugin = DeepSpeedPlugin()
     accelerator = Accelerator(
         gradient_accumulation_steps=gradient_accumulation_steps,
@@ -35,8 +38,6 @@ if __name__ == "__main__":
         log_with="wandb",
         deepspeed_plugin=deepspeed_plugin
     )
-    
-    accelerator.utils.set_seed(42)
     
     if accelerator.is_main_process:
         wandb.init(
