@@ -13,6 +13,7 @@ dependencies = [
     "accelerate >= 1.5; sys_platform == 'linux'",
     "deepspeed >= 0.16.4; sys_platform == 'linux'",
     "bitsandbytes >= 0.45.3; sys_platform == 'linux'",
+    "mpi4py >= 4.0.3; sys_platform == 'linux'",
     "openai>=1.69.0",
     "python-dotenv>=1.1.0",
 ]
