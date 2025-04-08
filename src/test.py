@@ -27,6 +27,8 @@ if __name__ == "__main__":
     
     gradient_accumulation_steps = 2
     
+    num_iterations = 2
+    
     model_name = "google/gemma-3-1b-it"
     
     accelerate.utils.set_seed(42)
@@ -70,18 +72,8 @@ if __name__ == "__main__":
     )
     
     policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager").to(accelerator.device)
-    ref = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager").to(accelerator.device)
+    ref_policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager").to(accelerator.device)
     tok = AutoTokenizer.from_pretrained(model_name)
-    
-    trainer = GRPOTrainer(
-        accelerator,
-        policy,
-        ref,
-        tok,
-        [letter_reward],
-        num_iterations=2,
-        beta=0.1
-    )
     
     optimizer = bnb.optim.Adam8bit(
         policy.parameters(),
@@ -90,7 +82,7 @@ if __name__ == "__main__":
         weight_decay=adam_weight_decay,
     )
     
-    num_training_steps = epochs * len(train_dataloader) * trainer.num_iterations
+    num_training_steps = epochs * len(train_dataloader) * num_iterations
     
     lr_scheduler = get_scheduler(
         name="constant_with_warmup",
@@ -100,13 +92,19 @@ if __name__ == "__main__":
     )
 
     # Prepare only the trainable model, optimizer, dataloader, and scheduler
-    policy, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
-        policy, optimizer, train_dataloader, lr_scheduler
+    policy, ref_policy, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
+        policy, ref_policy, optimizer, train_dataloader, lr_scheduler
     )
 
-    # Update the trainer with the prepared policy model instance
-    trainer.policy = policy
-    trainer.device = accelerator.device
+    trainer = GRPOTrainer(
+        accelerator,
+        policy,
+        ref_policy,
+        tok,
+        [letter_reward],
+        num_iterations=2,
+        beta=0.1
+    )
 
     progress_bar = tqdm(range(num_training_steps))
     
