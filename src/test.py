@@ -147,38 +147,38 @@ if __name__ == "__main__":
                 rollouts = trainer.generate_rollouts(batch, old_model=old_policy, iteration=i)
                 policy.train()
                 
-                with accelerator.accumulate(policy):
-                    loss, metrics = trainer.compute_loss(rollouts)
+                # with accelerator.accumulate(policy):
+                loss, metrics = trainer.compute_loss(rollouts)
+                
+                if accelerator.is_main_process:
+                    completions = rollouts["metrics"]["completions"]
+                    rollouts["metrics"]["completions"] = None
                     
-                    if accelerator.is_main_process:
-                        completions = rollouts["metrics"]["completions"]
-                        rollouts["metrics"]["completions"] = None
-                        
-                        # log metrics and completions
-                        other_keys = [k for k in batch.keys() if k != "prompt"]
-                        
-                        data = []
-                        
-                        for completion in completions:
-                            data.append([
-                                step,
-                                batch["prompt"][0],
-                                completion
-                            ] + [batch[k][0] for k in other_keys])
-                        
-                        artifact = wandb.Artifact(completion_artifact_name, type="table")
-                        artifact.add(wandb.Table(columns=["step", "prompt", "completion"] + other_keys, data=data), "completions")
-                        wandb.log(metrics, step=progress_bar.n)
-                        wandb.log_artifact(artifact, name=f"completions/{progress_bar.n}")
+                    # log metrics and completions
+                    other_keys = [k for k in batch.keys() if k != "prompt"]
                     
-                    accelerator.backward(loss)
-                    accelerator.clip_grad_norm_(
-                        policy.parameters(), clip_grad_norm
-                    )
+                    data = []
                     
-                    optimizer.step()
-                    lr_scheduler.step()
+                    for completion in completions:
+                        data.append([
+                            step,
+                            batch["prompt"][0],
+                            completion
+                        ] + [batch[k][0] for k in other_keys])
                     
-                    optimizer.zero_grad()
+                    artifact = wandb.Artifact(completion_artifact_name, type="table")
+                    artifact.add(wandb.Table(columns=["step", "prompt", "completion"] + other_keys, data=data), "completions")
+                    wandb.log(metrics, step=progress_bar.n)
+                    wandb.log_artifact(artifact, name=f"completions/{progress_bar.n}")
+                
+                accelerator.backward(loss)
+                accelerator.clip_grad_norm_(
+                    policy.parameters(), clip_grad_norm
+                )
+                
+                optimizer.step()
+                lr_scheduler.step()
+                
+                optimizer.zero_grad()
                 
                 progress_bar.update()
