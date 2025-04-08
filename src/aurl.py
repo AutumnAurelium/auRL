@@ -62,9 +62,6 @@ class GRPOTrainer:
         self.tokenizer = tokenizer
         
         self.device = self.model.device
-        if self.ref_model.device != self.device:
-            raise ValueError(f"Mismatch between policy model device ({self.device}) and ref model device ({self.ref_model.device})")
-
         self.num_iterations = num_iterations
 
         self.reward_funcs = reward_funcs
