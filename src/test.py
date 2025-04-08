@@ -77,7 +77,7 @@ if __name__ == "__main__":
     trainer = GRPOTrainer(
         accelerator,
         policy,
-        ref,
+        ref.to(accelerator.device),
         tok,
         [letter_reward],
         num_iterations=2,
@@ -100,10 +100,16 @@ if __name__ == "__main__":
         num_training_steps=num_training_steps,
     )
 
-    # Prepare everything together
-    policy, old_policy, ref, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
-        policy, old_policy, ref, optimizer, train_dataloader, lr_scheduler
+    # Prepare only the trainable model, optimizer, dataloader, and scheduler
+    policy, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
+        policy, optimizer, train_dataloader, lr_scheduler
     )
+
+    # Move old_policy to the correct device *after* potential modifications by prepare
+    old_policy = old_policy.to(accelerator.device)
+
+    # Update the trainer with the prepared policy model instance
+    trainer.policy = policy
 
     progress_bar = tqdm(range(num_training_steps))
     
@@ -115,10 +121,11 @@ if __name__ == "__main__":
             # idk if this sync is necessary in all cases, may scale poorly
             accelerator.wait_for_everyone()
 
-            old_policy_unwrapped = accelerator.unwrap_model(old_policy)
+            # old_policy should already be on the correct device and not wrapped by accelerator
+            # policy is wrapped, so unwrap it to get state_dict
             policy_unwrapped = accelerator.unwrap_model(policy)
-            old_policy_unwrapped.load_state_dict(policy_unwrapped.state_dict())
-            
+            old_policy.load_state_dict(policy_unwrapped.state_dict())
+
             # re-synchronize
             accelerator.wait_for_everyone()
             
@@ -135,6 +142,7 @@ if __name__ == "__main__":
             
             for i in range(trainer.num_iterations):
                 policy.eval()
+                # Pass the manually-moved old_policy
                 rollouts = trainer.generate_rollouts(batch, old_model=old_policy, iteration=i)
                 policy.train()
                 
