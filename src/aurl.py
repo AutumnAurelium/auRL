@@ -13,6 +13,7 @@ import torch.nn as nn
 from typing import Callable
 from accelerate import Accelerator
 from accelerate.utils import broadcast_object_list, gather, gather_object, is_peft_model, set_seed
+import deepspeed
 
 from utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation
 
@@ -63,7 +64,28 @@ class GRPOTrainer:
         self.accelerator = accelerator
         
         self.policy = policy
-        self.ref_policy = ref_policy
+
+        # Load reference policy separately
+        ref_policy_hf = ref_policy # Pass the loaded HF model here
+        if ref_policy_hf is not None:
+            # Create a DS inference config disabling ZeRO
+            # Ensure dtype matches your accelerator/policy setup (e.g., torch.bfloat16 if using bf16)
+            policy_dtype = next(policy.parameters()).dtype
+            ds_inference_config = {
+                "tensor_parallel": {"tp_size": 1}, # No tensor parallelism
+                "dtype": policy_dtype,
+                "replace_with_kernel_inject": False, # Start simple, maybe enable later
+                 "zero_optimization": {"stage": 0} # Crucial: Disable ZeRO for ref policy
+            }
+            # Initialize ref_policy with DS Inference Engine
+            # Ensure it's on the correct device *before* init_inference
+            self.ref_policy, _, _, _ = deepspeed.init_inference(
+                model=ref_policy_hf.to(self.accelerator.device),
+                config_params=ds_inference_config
+            )
+        else:
+             self.ref_policy = None
+
         self.tokenizer = tokenizer
         
         self.device = self.policy.device
@@ -198,13 +220,12 @@ class GRPOTrainer:
             if self.beta == 0.0:
                 ref_per_token_logps = None
             elif self.ref_policy is not None:
-                with unwrap_model_for_generation(self.ref_policy, self.accelerator, self.ds3_gather_params_for_generation) as unwrapped_model:
-                    ref_per_token_logps = self._per_token_logprobs(
-                        unwrapped_model,
-                        prompt_completion_ids,
-                        attention_mask,
-                        logits_to_keep,
-                    )
+                ref_per_token_logps = self._per_token_logprobs(
+                    self.ref_policy,
+                    prompt_completion_ids.to(self.ref_policy.device),
+                    attention_mask.to(self.ref_policy.device),
+                    logits_to_keep,
+                )
             else:
                 warnings.warn("No reference policy provided, but beta is not 0. No KL divergence will be computed.")
                 ref_per_token_logps = None
