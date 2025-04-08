@@ -198,20 +198,16 @@ class GRPOTrainer:
             if self.beta == 0.0:
                 ref_per_token_logps = None
             elif self.ref_policy is not None:
-                ref_per_token_logps = self._per_token_logprobs(
-                    self.ref_policy,
-                    prompt_completion_ids,
-                    attention_mask,
-                    logits_to_keep,
-                )
-            else:
-                with self.accelerator.unwrap_model(self.policy).disable_adapter():
+                with unwrap_model_for_generation(self.ref_policy, self.accelerator, False) as unwrapped_model:
                     ref_per_token_logps = self._per_token_logprobs(
-                        self.policy,
+                        unwrapped_model,
                         prompt_completion_ids,
                         attention_mask,
                         logits_to_keep,
                     )
+            else:
+                warnings.warn("No reference policy provided, but beta is not 0. No KL divergence will be computed.")
+                ref_per_token_logps = None
 
         # Decode the generated completions
         completions_text = self.tokenizer.batch_decode(
