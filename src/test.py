@@ -10,7 +10,6 @@ import json
 from aurl import GRPOTrainer
 from rewards import letter_reward, poem_topics
 import random
-import os
 
 POETRY_PROMPT = """You are a poet. Write a short, impactful poem on the subject requested."""
 
@@ -27,7 +26,7 @@ if __name__ == "__main__":
     
     gradient_accumulation_steps = 2
     
-    model_name = "Qwen/Qwen2.5-7B-Instruct"
+    model_name = "google/gemma-3-4b-pt"
     
     deepspeed_plugin = DeepSpeedPlugin()
     accelerator = Accelerator(
@@ -36,6 +35,8 @@ if __name__ == "__main__":
         log_with="wandb",
         deepspeed_plugin=deepspeed_plugin
     )
+    
+    accelerator.utils.set_seed(42)
     
     if accelerator.is_main_process:
         wandb.init(
@@ -68,11 +69,11 @@ if __name__ == "__main__":
     )
     train_dataloader = accelerator.prepare(train_dataloader)
     
-    policy = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+    policy = AutoModelForCausalLM.from_pretrained(model_name)
     policy = accelerator.prepare(policy)
-    old_policy = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+    old_policy = AutoModelForCausalLM.from_pretrained(model_name)
     old_policy = accelerator.prepare(old_policy)
-    ref = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
+    ref = AutoModelForCausalLM.from_pretrained(model_name)
     ref = accelerator.prepare(ref)
     tok = AutoTokenizer.from_pretrained(model_name)
     
@@ -110,8 +111,15 @@ if __name__ == "__main__":
     policy.train()
     for epoch in range(epochs):
         for step, batch in enumerate(train_dataloader):
-            with accelerator.main_process_first():
-                old_policy.load_state_dict(policy.state_dict())
+            # idk if this sync is necessary in all cases, may scale poorly
+            accelerator.wait_for_everyone()
+
+            old_policy_unwrapped = accelerator.unwrap_model(old_policy)
+            policy_unwrapped = accelerator.unwrap_model(policy)
+            old_policy_unwrapped.load_state_dict(policy_unwrapped.state_dict())
+            
+            # re-synchronize
+            accelerator.wait_for_everyone()
             
             # if the prompt is a JSON string, convert it to a list/dict
             # if it fails to parse, use as a normal string
@@ -121,7 +129,7 @@ if __name__ == "__main__":
                     prompts.append(json.loads(prompt))
                 
                 batch["prompt"] = prompts
-            except Exception as _:
+            except json.JSONDecodeError as _:
                 pass
             
             for i in range(trainer.num_iterations):
