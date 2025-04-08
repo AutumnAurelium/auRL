@@ -96,7 +96,7 @@ if __name__ == "__main__":
         policy, optimizer, train_dataloader, lr_scheduler
     )
     
-    ref_policy = accelerator.prepare(ref_policy, evaluation_mode=True)
+    ref_policy = accelerator.prepare_model(ref_policy, evaluation_mode=True)
 
     trainer = GRPOTrainer(
         accelerator,
