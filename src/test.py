@@ -71,7 +71,7 @@ if __name__ == "__main__":
         dataset, batch_size=batch_size, shuffle=True
     )
     
-    policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager").to(accelerator.device)
+    policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager")
     ref_policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager").to(accelerator.device)
     tok = AutoTokenizer.from_pretrained(model_name)
     
@@ -92,8 +92,8 @@ if __name__ == "__main__":
     )
 
     # Prepare only the trainable model, optimizer, dataloader, and scheduler
-    policy, ref_policy, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
-        policy, ref_policy, optimizer, train_dataloader, lr_scheduler
+    policy, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
+        policy, optimizer, train_dataloader, lr_scheduler
     )
 
     trainer = GRPOTrainer(

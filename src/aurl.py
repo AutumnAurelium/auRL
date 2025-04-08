@@ -198,7 +198,7 @@ class GRPOTrainer:
             if self.beta == 0.0:
                 ref_per_token_logps = None
             elif self.ref_policy is not None:
-                with unwrap_model_for_generation(self.ref_policy, self.accelerator, False) as unwrapped_model:
+                with unwrap_model_for_generation(self.ref_policy, self.accelerator, self.ds3_gather_params_for_generation) as unwrapped_model:
                     ref_per_token_logps = self._per_token_logprobs(
                         unwrapped_model,
                         prompt_completion_ids,
