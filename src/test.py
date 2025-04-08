@@ -105,9 +105,6 @@ if __name__ == "__main__":
         policy, optimizer, train_dataloader, lr_scheduler
     )
 
-    # Move old_policy to the correct device *after* potential modifications by prepare
-    old_policy = old_policy.to(accelerator.device)
-
     # Update the trainer with the prepared policy model instance
     trainer.model = policy
     trainer.device = accelerator.device
@@ -119,17 +116,6 @@ if __name__ == "__main__":
     policy.train()
     for epoch in range(epochs):
         for step, batch in enumerate(train_dataloader):
-            # idk if this sync is necessary in all cases, may scale poorly
-            accelerator.wait_for_everyone()
-
-            # old_policy should already be on the correct device and not wrapped by accelerator
-            # policy is wrapped, so unwrap it to get state_dict
-            policy_unwrapped = accelerator.unwrap_model(policy)
-            old_policy.load_state_dict(policy_unwrapped.state_dict())
-
-            # re-synchronize
-            accelerator.wait_for_everyone()
-            
             # if the prompt is a JSON string, convert it to a list/dict
             # if it fails to parse, use as a normal string
             try:
@@ -141,35 +127,35 @@ if __name__ == "__main__":
             except json.JSONDecodeError as _:
                 pass
             
+            rollouts = trainer.generate_rollouts(batch)
+            
+            if accelerator.is_main_process:
+                completions = rollouts["metrics"]["completions"]
+                rollouts["metrics"]["completions"] = None
+                
+                # log metrics and completions
+                other_keys = [k for k in batch.keys() if k != "prompt"]
+                
+                data = []
+                
+                for completion in completions:
+                    data.append([
+                        step,
+                        batch["prompt"][0],
+                        completion
+                    ] + [batch[k][0] for k in other_keys])
+                
+                artifact = wandb.Artifact(completion_artifact_name, type="table")
+                artifact.add(wandb.Table(columns=["step", "prompt", "completion"] + other_keys, data=data), "completions")
+                wandb.log_artifact(artifact, name=f"completions/{progress_bar.n}")
+                
             for i in range(trainer.num_iterations):
-                policy.eval()
-                # Pass the manually-moved old_policy
-                rollouts = trainer.generate_rollouts(batch, old_model=old_policy, iteration=i)
                 policy.train()
                 
-                # with accelerator.accumulate(policy):
                 loss, metrics = trainer.compute_loss(rollouts)
                 
                 if accelerator.is_main_process:
-                    completions = rollouts["metrics"]["completions"]
-                    rollouts["metrics"]["completions"] = None
-                    
-                    # log metrics and completions
-                    other_keys = [k for k in batch.keys() if k != "prompt"]
-                    
-                    data = []
-                    
-                    for completion in completions:
-                        data.append([
-                            step,
-                            batch["prompt"][0],
-                            completion
-                        ] + [batch[k][0] for k in other_keys])
-                    
-                    artifact = wandb.Artifact(completion_artifact_name, type="table")
-                    artifact.add(wandb.Table(columns=["step", "prompt", "completion"] + other_keys, data=data), "completions")
                     wandb.log(metrics, step=progress_bar.n)
-                    wandb.log_artifact(artifact, name=f"completions/{progress_bar.n}")
                 
                 accelerator.backward(loss)
                 accelerator.clip_grad_norm_(
@@ -180,5 +166,6 @@ if __name__ == "__main__":
                 lr_scheduler.step()
                 
                 optimizer.zero_grad()
-                
-                progress_bar.update()
+            
+            # update progress bar
+            progress_bar.update()

@@ -38,6 +38,8 @@ class GRPOTrainer:
     reward_funcs: list[Callable]
     
     generation_config: GenerationConfig
+    
+    ds3_gather_params_for_generation: bool
 
     def __init__(
         self,
@@ -53,7 +55,8 @@ class GRPOTrainer:
         epsilon=0.2,
         epsilon_high=None,
         do_std_reward_scaling=True,
-        generation_config: GenerationConfig = None
+        generation_config: GenerationConfig = None,
+        ds3_gather_params_for_generation: bool = False
     ):
         self.accelerator = accelerator
         
@@ -73,6 +76,8 @@ class GRPOTrainer:
         self.epsilon_high = epsilon_high if epsilon_high else epsilon
         
         self.do_std_reward_scaling = do_std_reward_scaling
+        
+        self.ds3_gather_params_for_generation = ds3_gather_params_for_generation
         
         if generation_config is not None:
             self.generation_config = generation_config
@@ -119,7 +124,7 @@ class GRPOTrainer:
             logits, input_ids
         )  # compute logprobs for the input tokens
 
-    def generate_rollouts(self, batch: dict[str, list], old_model: PreTrainedModel = None, iteration: int = 0):
+    def generate_rollouts(self, batch: dict[str, list]):
         if "prompt" not in batch:
             raise KeyError("Dataset must include 'prompt' column.")
         
@@ -147,8 +152,7 @@ class GRPOTrainer:
         prompt_ids = torch.repeat_interleave(prompt_ids, self.num_generations, dim=0)
         prompt_mask = torch.repeat_interleave(prompt_mask, self.num_generations, dim=0)
 
-        # TODO: change to support gather-params-for-generation args
-        with unwrap_model_for_generation(self.model, self.accelerator, False) as unwrapped_model:
+        with unwrap_model_for_generation(self.model, self.accelerator, self.ds3_gather_params_for_generation) as unwrapped_model:
             unwrapped_model: PreTrainedModel
             prompt_completion_ids = unwrapped_model.generate(prompt_ids, attention_mask=prompt_mask, generation_config=self.generation_config)
 
@@ -184,10 +188,10 @@ class GRPOTrainer:
         with torch.no_grad():
             # When using num_iterations == 1, old_per_token_logps == per_token_logps, so we can skip its
             # computation here, and use per_token_logps.detach() instead.
-            if iteration > 0:
-                with unwrap_model_for_generation(old_model, self.accelerator, False) as unwrapped_old_model:
+            if self.num_iterations > 1:
+                with unwrap_model_for_generation(self.model, self.accelerator, False) as unwrapped_model:
                     old_per_token_logps = self._per_token_logprobs(
-                        unwrapped_old_model, prompt_completion_ids, attention_mask, logits_to_keep
+                        unwrapped_model, prompt_completion_ids, attention_mask, logits_to_keep
                     )
             else:
                 old_per_token_logps = None
