@@ -27,7 +27,7 @@ if __name__ == "__main__":
     
     gradient_accumulation_steps = 2
     
-    model_name = "google/gemma-3-4b-pt"
+    model_name = "google/gemma-3-4b-it"
     
     accelerate.utils.set_seed(42)
     
