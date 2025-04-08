@@ -72,7 +72,6 @@ if __name__ == "__main__":
     )
     
     policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager")
-    ref_policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager").to(accelerator.device)
     tok = AutoTokenizer.from_pretrained(model_name)
     
     optimizer = bnb.optim.Adam8bit(
@@ -95,6 +94,9 @@ if __name__ == "__main__":
     policy, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
         policy, optimizer, train_dataloader, lr_scheduler
     )
+    
+    # load ref policy after initializing the accelerator?
+    ref_policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager").to(accelerator.device)
 
     trainer = GRPOTrainer(
         accelerator,

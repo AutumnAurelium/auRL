@@ -66,25 +66,7 @@ class GRPOTrainer:
         self.policy = policy
 
         # Load reference policy separately
-        ref_policy_hf = ref_policy # Pass the loaded HF model here
-        if ref_policy_hf is not None:
-            # Create a DS inference config disabling ZeRO
-            # Ensure dtype matches your accelerator/policy setup (e.g., torch.bfloat16 if using bf16)
-            policy_dtype = next(policy.parameters()).dtype
-            ds_inference_config = {
-                "tensor_parallel": {"tp_size": 1}, # No tensor parallelism
-                "dtype": policy_dtype,
-                "replace_with_kernel_inject": False, # Start simple, maybe enable later
-                 "zero_optimization": {"stage": 0} # Crucial: Disable ZeRO for ref policy
-            }
-            # Initialize ref_policy with DS Inference Engine
-            # Ensure it's on the correct device *before* init_inference
-            self.ref_policy, _, _, _ = deepspeed.init_inference(
-                model=ref_policy_hf.to(self.accelerator.device),
-                config_params=ds_inference_config
-            )
-        else:
-             self.ref_policy = None
+        self.ref_policy = ref_policy
 
         self.tokenizer = tokenizer
         
