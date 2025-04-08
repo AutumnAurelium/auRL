@@ -70,14 +70,13 @@ if __name__ == "__main__":
     )
     
     policy = AutoModelForCausalLM.from_pretrained(model_name)
-    old_policy = AutoModelForCausalLM.from_pretrained(model_name)
     ref = AutoModelForCausalLM.from_pretrained(model_name)
     tok = AutoTokenizer.from_pretrained(model_name)
     
     trainer = GRPOTrainer(
         accelerator,
         policy,
-        ref.to(accelerator.device),
+        ref,
         tok,
         [letter_reward],
         num_iterations=2,
