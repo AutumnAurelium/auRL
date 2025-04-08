@@ -69,8 +69,8 @@ if __name__ == "__main__":
         dataset, batch_size=batch_size, shuffle=True
     )
     
-    policy = AutoModelForCausalLM.from_pretrained(model_name)
-    ref = AutoModelForCausalLM.from_pretrained(model_name)
+    policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="flash_attention_2")
+    ref = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="flash_attention_2")
     tok = AutoTokenizer.from_pretrained(model_name)
     
     trainer = GRPOTrainer(
