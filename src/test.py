@@ -105,7 +105,7 @@ if __name__ == "__main__":
     )
 
     # Update the trainer with the prepared policy model instance
-    trainer.model = policy
+    trainer.policy = policy
     trainer.device = accelerator.device
 
     progress_bar = tqdm(range(num_training_steps))
@@ -150,6 +150,7 @@ if __name__ == "__main__":
                 
             for i in range(trainer.num_iterations):
                 policy.train()
+                optimizer.zero_grad()
                 
                 loss, metrics = trainer.compute_loss(rollouts)
                 
@@ -163,8 +164,6 @@ if __name__ == "__main__":
                 
                 optimizer.step()
                 lr_scheduler.step()
-                
-                optimizer.zero_grad()
             
             # update progress bar
             progress_bar.update()

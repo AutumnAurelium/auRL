@@ -20,7 +20,9 @@ from utils import selective_log_softmax, is_conversational, apply_chat_template,
 class GRPOTrainer:
     accelerator: Accelerator
     
-    model: PreTrainedModel
+    policy: PreTrainedModel
+    ref_policy: PreTrainedModel
+    
     tokenizer: PreTrainedTokenizerBase
 
     num_iterations: int
@@ -44,8 +46,8 @@ class GRPOTrainer:
     def __init__(
         self,
         accelerator: Accelerator,
-        model: PreTrainedModel,
-        ref_model: PreTrainedModel,
+        policy: PreTrainedModel,
+        ref_policy: PreTrainedModel,
         tokenizer: PreTrainedTokenizerBase,
         reward_funcs: list[Callable],
         num_iterations=1,
@@ -60,11 +62,11 @@ class GRPOTrainer:
     ):
         self.accelerator = accelerator
         
-        self.model = model
-        self.ref_model = ref_model
+        self.policy = policy
+        self.ref_policy = ref_policy
         self.tokenizer = tokenizer
         
-        self.device = self.model.device
+        self.device = self.policy.device
         self.num_iterations = num_iterations
 
         self.reward_funcs = reward_funcs
@@ -127,9 +129,6 @@ class GRPOTrainer:
     def generate_rollouts(self, batch: dict[str, list]):
         if "prompt" not in batch:
             raise KeyError("Dataset must include 'prompt' column.")
-        
-        if old_model is None:
-            old_model = self.model
 
         metrics = {}
 
@@ -152,7 +151,7 @@ class GRPOTrainer:
         prompt_ids = torch.repeat_interleave(prompt_ids, self.num_generations, dim=0)
         prompt_mask = torch.repeat_interleave(prompt_mask, self.num_generations, dim=0)
 
-        with unwrap_model_for_generation(self.model, self.accelerator, self.ds3_gather_params_for_generation) as unwrapped_model:
+        with unwrap_model_for_generation(self.policy, self.accelerator, self.ds3_gather_params_for_generation) as unwrapped_model:
             unwrapped_model: PreTrainedModel
             prompt_completion_ids = unwrapped_model.generate(prompt_ids, attention_mask=prompt_mask, generation_config=self.generation_config)
 
@@ -186,10 +185,10 @@ class GRPOTrainer:
         logits_to_keep = completion_ids.size(1)
 
         with torch.no_grad():
-            # When using num_iterations == 1, old_per_token_logps == per_token_logps, so we can skip its
+            # When using num_iterations == 1, ßper_token_logps == per_token_logps, so we can skip its
             # computation here, and use per_token_logps.detach() instead.
             if self.num_iterations > 1:
-                with unwrap_model_for_generation(self.model, self.accelerator, False) as unwrapped_model:
+                with unwrap_model_for_generation(self.policy, self.accelerator, False) as unwrapped_model:
                     old_per_token_logps = self._per_token_logprobs(
                         unwrapped_model, prompt_completion_ids, attention_mask, logits_to_keep
                     )
@@ -198,17 +197,17 @@ class GRPOTrainer:
 
             if self.beta == 0.0:
                 ref_per_token_logps = None
-            elif self.ref_model is not None:
+            elif self.ref_policy is not None:
                 ref_per_token_logps = self._per_token_logprobs(
-                    self.ref_model,
+                    self.ref_policy,
                     prompt_completion_ids,
                     attention_mask,
                     logits_to_keep,
                 )
             else:
-                with self.accelerator.unwrap_model(self.model).disable_adapter():
+                with self.accelerator.unwrap_model(self.policy).disable_adapter():
                     ref_per_token_logps = self._per_token_logprobs(
-                        self.model,
+                        self.policy,
                         prompt_completion_ids,
                         attention_mask,
                         logits_to_keep,
@@ -345,7 +344,7 @@ class GRPOTrainer:
         logits_to_keep = completion_ids.size(1)  # we only need to compute the logits for the completion tokens
 
         per_token_logps = self._per_token_logprobs(
-            self.model, input_ids, attention_mask, logits_to_keep
+            self.policy, input_ids, attention_mask, logits_to_keep
         )
 
         # Compute the KL divergence between the model and the reference model
