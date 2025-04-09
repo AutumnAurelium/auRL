@@ -156,7 +156,9 @@ if __name__ == "__main__":
                 loss, metrics = trainer.compute_loss(rollouts)
                 
                 if accelerator.is_main_process:
-                    wandb.log(metrics, step=progress_bar.n)
+                    # Use a unique step for each inner iteration
+                    log_step = progress_bar.n * trainer.num_iterations + i
+                    wandb.log(metrics, step=log_step)
                 
                 accelerator.backward(loss)
                 accelerator.clip_grad_norm_(
