@@ -205,7 +205,7 @@ class GRPOTrainer:
                 with unwrap_model_for_generation(self.ref_policy, self.accelerator, self.ds3_gather_params_for_generation) as unwrapped_model:
                     ref_per_token_logps = self._per_token_logprobs(
                         unwrapped_model, prompt_completion_ids, attention_mask, logits_to_keep
-                    )
+                    ).detach()
             else:
                 warnings.warn("No reference policy provided, but beta is not 0. No KL divergence will be computed.")
                 ref_per_token_logps = None
