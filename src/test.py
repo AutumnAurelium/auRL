@@ -29,7 +29,7 @@ if __name__ == "__main__":
     
     num_iterations = 2
     
-    model_name = "google/gemma-3-1b-it"
+    model_name = "google/gemma-3-4b-it"
     
     accelerate.utils.set_seed(42)
     
