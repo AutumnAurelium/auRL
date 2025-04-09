@@ -62,7 +62,7 @@ def letter_reward(prompts: list[str], completions: list[str]):
             if c.upper() == "A":
                 score += 1
         
-        rewards.append(score)
+        rewards.append(score / len(poem))
         
     return rewards
 
