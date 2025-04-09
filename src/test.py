@@ -82,7 +82,7 @@ if __name__ == "__main__":
         weight_decay=adam_weight_decay,
     )
     
-    num_training_steps = epochs * len(train_dataloader) * num_iterations
+    num_training_steps = epochs * len(train_dataloader)
     
     lr_scheduler = get_scheduler(
         name="constant_with_warmup",
