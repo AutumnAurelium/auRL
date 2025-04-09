@@ -21,7 +21,7 @@ if __name__ == "__main__":
     
     adam_betas = (0.9, 0.999)
     adam_weight_decay = 0.01
-    initial_lr = 1e-5
+    initial_lr = 5e-6
     
     clip_grad_norm = 1.0
     
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         tok,
         [letter_reward],
         num_iterations=2,
-        beta=0.1,
+        beta=0.3,
         ds3_gather_params_for_generation=True
     )
 
