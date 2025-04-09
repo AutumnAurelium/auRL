@@ -105,7 +105,7 @@ if __name__ == "__main__":
         tok,
         [letter_reward],
         num_iterations=2,
-        beta=0.3,
+        beta=0.05,
         ds3_gather_params_for_generation=True
     )
 
@@ -166,7 +166,8 @@ if __name__ == "__main__":
                 )
                 
                 optimizer.step()
-                lr_scheduler.step()
+            
+            lr_scheduler.step()
             
             # update progress bar
             progress_bar.update()
