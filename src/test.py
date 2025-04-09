@@ -21,13 +21,13 @@ if __name__ == "__main__":
     
     adam_betas = (0.9, 0.999)
     adam_weight_decay = 0.01
-    initial_lr = 5e-6
+    initial_lr = 1e-6
     
     clip_grad_norm = 1.0
     
-    gradient_accumulation_steps = 2
+    gradient_accumulation_steps = 4
     
-    num_iterations = 2
+    num_iterations = 4
     
     model_name = "google/gemma-3-4b-it"
     
