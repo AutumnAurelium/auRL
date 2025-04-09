@@ -105,7 +105,8 @@ if __name__ == "__main__":
         tok,
         [letter_reward],
         num_iterations=2,
-        beta=0.1
+        beta=0.1,
+        ds3_gather_params_for_generation=True
     )
 
     progress_bar = tqdm(range(num_training_steps))
