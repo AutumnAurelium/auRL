@@ -1,4 +1,3 @@
-
 poem_topics = [
     "dawn in the mountains",
     "urban solitude",
@@ -58,19 +57,12 @@ def letter_reward(prompts: list[str], completions: list[str]):
         poem = completion[-1]["content"]
         
         score = 0
-        longest_stride = 0
         
         for c in poem:
-            if c.isupper():
-                longest_stride += 1
-                score += longest_stride
-            else:
-                longest_stride = 0
+            if c.upper() == "A":
+                score += 1
         
-        if len(poem) > 0:
-            rewards.append(score / len(poem))
-        else:
-            rewards.append(0)
+        rewards.append(score)
         
     return rewards
 
