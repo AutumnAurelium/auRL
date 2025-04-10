@@ -9,10 +9,18 @@ from tqdm.auto import tqdm
 import wandb
 import json
 from aurl import GRPOTrainer
-from rewards import letter_reward, poem_topics
+from rewards import base64_reward, generate_encoded_strings
 import random
 
-POETRY_PROMPT = """You are a poet. Write a short, impactful poem on the subject requested."""
+BASE64_PROMPT = """You will be presented with a base64-encoded string. You must decode it and return the original string.
+
+Please structure your response like this, with no preceding or trailing text:
+<thinking>
+Here, reason through your process step by step.
+</thinking>
+<answer>
+Here, return the original (case sensitive) string and only the string.
+</answer>"""
 
 if __name__ == "__main__":
     epochs = 1
@@ -60,8 +68,8 @@ if __name__ == "__main__":
     dataset = Dataset.from_list([
         {
             "prompt": json.dumps([
-                {"role": "system", "content": POETRY_PROMPT},
-                {"role": "user", "content": f"Please write a poem about '{random.choice(poem_topics)}'"}
+                {"role": "system", "content": BASE64_PROMPT},
+                {"role": "user", "content": f"Please decode the following base64-encoded string: {generate_encoded_strings()}"}
             ])
         }
         for _ in range(1000)
@@ -103,7 +111,7 @@ if __name__ == "__main__":
         policy,
         ref_policy,
         tok,
-        [letter_reward],
+        [base64_reward],
         num_iterations=2,
         beta=0.05,
         ds3_gather_params_for_generation=True
