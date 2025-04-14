@@ -215,7 +215,7 @@ def main(script_args: ScriptArguments):
         # This is particularly useful here because we generate completions from the same prompts.
         enable_prefix_caching=script_args.enable_prefix_caching,
         max_model_len=script_args.max_model_len,
-        worker_extension_cls="aurl.vllm_serve.WeightSyncWorkerExtension",
+        worker_extension_cls="vllm_serve.WeightSyncWorkerExtension",
     )
 
     app = FastAPI()
