@@ -163,7 +163,7 @@ class GRPOTrainer:
         completion_ids = self.vllm.generate(
             prompts,
             n=self.num_generations,
-            max_tokens=2048,
+            max_tokens=512,
             temperature=self.temperature,
             top_p=0.8,
             top_k=20,
