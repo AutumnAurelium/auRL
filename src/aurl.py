@@ -154,34 +154,49 @@ class GRPOTrainer:
         prompt_ids = prompt_processed["input_ids"].to(self.device)
         prompt_mask = prompt_processed["attention_mask"].to(self.device)
         
-        # Repeat each prompt self.num_generations times
+        # Repeat each prompt self.num_generations times *locally*
         prompt_ids = torch.repeat_interleave(prompt_ids, self.num_generations, dim=0)
         prompt_mask = torch.repeat_interleave(prompt_mask, self.num_generations, dim=0)
 
-        # TODO: figure out what order these are returned in - if prompts are ["A", "B"] and n=2, is it ["A...", "A...", "B...", "B..."] or ["A...", "B...", "A...", "B..."]?
-        # TODO: collect all prompts and send one request
-        completion_ids_list = self.vllm.generate(
-            prompts,
-            n=self.num_generations,
-            max_tokens=512,
-            temperature=self.temperature,
-            top_p=0.8,
-            top_k=20,
-            min_p=0.0,
-            repetition_penalty=1.0
-        )
+        # Gather all prompts onto the main process for generation
+        all_prompts = gather_object(prompts)
         
-        # Broadcast the completions from the main process to all processes, ensuring each process receives its
-        # corresponding slice.
-        completion_ids = broadcast_object_list(completion_ids_list, from_process=0)
-        process_slice = slice(
-            self.accelerator.process_index * len(prompts),
-            (self.accelerator.process_index + 1) * len(prompts),
-        )
-        completion_ids = completion_ids[process_slice]
+        all_completion_ids_list = None
+        if self.accelerator.is_main_process:
+            # Generate completions for all gathered prompts
+            all_completion_ids_list = self.vllm.generate(
+                all_prompts, # Use gathered prompts
+                n=self.num_generations,
+                max_tokens=512,
+                temperature=self.temperature,
+                top_p=0.8,
+                top_k=20,
+                min_p=0.0,
+                repetition_penalty=1.0
+            )
+            
+            # Chunk the flat list of completions
+            # Expected structure: [[p0_g0, p0_g1,...], [p1_g0, p1_g1,...], ...]
+            num_all_prompts = len(all_prompts)
+            if len(all_completion_ids_list) != num_all_prompts * self.num_generations:
+                raise ValueError(f"Mismatch between expected ({num_all_prompts * self.num_generations}) and actual ({len(all_completion_ids_list)}) number of completions.")
+                
+            chunked_completion_ids = [
+                all_completion_ids_list[i * self.num_generations:(i + 1) * self.num_generations]
+                for i in range(num_all_prompts)
+            ]
+        else:
+            chunked_completion_ids = None # Placeholder for non-main processes
+
+        # Scatter the chunked completions back to the corresponding processes
+        # Each process receives a list of lists: [[local_p0_g0, local_p0_g1,...], [local_p1_g0, local_p1_g1,...], ...]
+        local_chunked_completion_ids = self.accelerator.scatter_object(chunked_completion_ids)
+        
+        # Flatten the received list of lists to match the repeated prompt_ids structure
+        local_completion_ids = [item for sublist in local_chunked_completion_ids for item in sublist]
 
         # Pad the completions, and concatenate them with the prompts
-        completion_ids = [torch.tensor(ids, device=self.accelerator.device) for ids in completion_ids]
+        completion_ids = [torch.tensor(ids, device=self.accelerator.device) for ids in local_completion_ids] # Use local_completion_ids
         completion_ids = pad(completion_ids, padding_value=self.tokenizer.pad_token_id)
         prompt_completion_ids = torch.cat([prompt_ids, completion_ids], dim=1)
 
