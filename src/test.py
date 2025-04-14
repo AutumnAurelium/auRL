@@ -99,7 +99,7 @@ if __name__ == "__main__":
         num_training_steps=num_training_steps,
     )
     
-    vllm_client = VLLMClient()
+    vllm_client = VLLMClient(port=1111)
     # send policy model to vLLM
     # TODO: do i need this?
     # vllm_client.update_all_params(policy)
