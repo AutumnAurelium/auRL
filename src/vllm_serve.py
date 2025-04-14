@@ -217,10 +217,6 @@ def main(script_args: ScriptArguments):
         max_model_len=script_args.max_model_len,
         worker_extension_cls="vllm_serve.WeightSyncWorkerExtension",
     )
-    
-    model = llm.llm_engine.model_executor.driver_worker.model_runner.model
-    parameter_names = [name for name, _ in model.named_parameters()]
-    logger.warning(f"Parameter names: {parameter_names}")
 
     app = FastAPI()
 
