@@ -17,7 +17,7 @@ from contextlib import nullcontext
 from accelerate import Accelerator
 from accelerate.utils import broadcast_object_list, gather, gather_object, is_peft_model, set_seed
 from vllm_client import VLLMClient
-from utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation
+from utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation, pad
 
 class GRPOTrainer:
     accelerator: Accelerator
@@ -170,6 +170,20 @@ class GRPOTrainer:
             min_p=0.0,
             repetition_penalty=1.0
         )
+        
+        # Broadcast the completions from the main process to all processes, ensuring each process receives its
+        # corresponding slice.
+        completion_ids = broadcast_object_list(completion_ids_list, from_process=0)
+        process_slice = slice(
+            self.accelerator.process_index * len(prompts),
+            (self.accelerator.process_index + 1) * len(prompts),
+        )
+        completion_ids = completion_ids[process_slice]
+
+        # Pad the completions, and concatenate them with the prompts
+        completion_ids = [torch.tensor(ids, device=self.accelerator.device) for ids in completion_ids]
+        completion_ids = pad(completion_ids, padding_value=self.tokenizer.pad_token_id)
+        prompt_completion_ids = torch.cat([prompt_ids, completion_ids], dim=1)
 
         # Pad completion_ids to the right and create completion_mask
         max_completion_len = max(len(c) for c in completion_ids_list)
