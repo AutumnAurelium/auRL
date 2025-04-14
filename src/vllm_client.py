@@ -190,7 +190,7 @@ class VLLMClient:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
 
         # Set up the communication group for weight broadcasting
-        pg = StatelessProcessGroup.create(host=self.host, port=self.group_port, rank=self.rank, world_size=world_size)
+        pg = StatelessProcessGroup.create(host=self.host, port=self.group_port, rank=tensor_parallel_size, world_size=world_size)
         return PyNcclCommunicator(pg, device="cuda:0"), tensor_parallel_size
 
     def close_communicator(self):
