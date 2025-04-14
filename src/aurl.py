@@ -160,7 +160,16 @@ class GRPOTrainer:
 
         # TODO: figure out what order these are returned in - if prompts are ["A", "B"] and n=2, is it ["A...", "A...", "B...", "B..."] or ["A...", "B...", "A...", "B..."]?
         # TODO: collect all prompts and send one request
-        completion_ids = self.vllm.generate(prompts, n=self.num_generations)
+        completion_ids = self.vllm.generate(
+            prompts,
+            n=self.num_generations,
+            max_gen_len=2048,
+            temperature=self.temperature,
+            top_p=0.8,
+            top_k=20,
+            min_p=0.0,
+            repetition_penalty=1.0
+        )
         completion_ids = torch.tensor(completion_ids, device=self.device)
         
         prompt_completion_ids = torch.cat([prompt_ids, completion_ids], dim=1)
