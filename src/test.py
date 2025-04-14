@@ -9,8 +9,8 @@ from tqdm.auto import tqdm
 import wandb
 import json
 from aurl import GRPOTrainer
+from vllm_client import VLLMClient
 from rewards import base64_reward, generate_encoded_strings
-import random
 
 BASE64_PROMPT = """You will be presented with a base64-encoded string. You must decode it and return the original string.
 
@@ -98,6 +98,11 @@ if __name__ == "__main__":
         num_warmup_steps=num_warmup_steps,
         num_training_steps=num_training_steps,
     )
+    
+    vllm_client = VLLMClient()
+    # send policy model to vLLM
+    # TODO: do i need this?
+    # vllm_client.update_all_params(policy)
 
     # Prepare only the trainable model, optimizer, dataloader, and scheduler
     policy, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
@@ -108,6 +113,7 @@ if __name__ == "__main__":
 
     trainer = GRPOTrainer(
         accelerator,
+        vllm_client,
         policy,
         ref_policy,
         tok,

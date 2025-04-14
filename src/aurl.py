@@ -10,16 +10,19 @@ from transformers import (
 import torch
 import warnings
 import torch.nn as nn
+import deepspeed
+from transformers.integrations.deepspeed import is_deepspeed_zero3_enabled
 from typing import Callable
+from contextlib import nullcontext
 from accelerate import Accelerator
 from accelerate.utils import broadcast_object_list, gather, gather_object, is_peft_model, set_seed
-import deepspeed
-
+from vllm_client import VLLMClient
 from utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation
-
 
 class GRPOTrainer:
     accelerator: Accelerator
+    
+    vllm: VLLMClient
     
     policy: PreTrainedModel
     ref_policy: PreTrainedModel
@@ -47,6 +50,7 @@ class GRPOTrainer:
     def __init__(
         self,
         accelerator: Accelerator,
+        vllm: VLLMClient,
         policy: PreTrainedModel,
         ref_policy: PreTrainedModel,
         tokenizer: PreTrainedTokenizerBase,
@@ -63,11 +67,10 @@ class GRPOTrainer:
     ):
         self.accelerator = accelerator
         
+        self.vllm = vllm
+        
         self.policy = policy
-
-        # Load reference policy separately
         self.ref_policy = ref_policy
-
         self.tokenizer = tokenizer
         
         self.device = self.policy.device
@@ -155,14 +158,11 @@ class GRPOTrainer:
         prompt_ids = torch.repeat_interleave(prompt_ids, self.num_generations, dim=0)
         prompt_mask = torch.repeat_interleave(prompt_mask, self.num_generations, dim=0)
 
-        with unwrap_model_for_generation(self.policy, self.accelerator, self.ds3_gather_params_for_generation) as unwrapped_model:
-            unwrapped_model: PreTrainedModel
-            prompt_completion_ids = unwrapped_model.generate(prompt_ids, attention_mask=prompt_mask, generation_config=self.generation_config)
-
-        # separate it out
-        prompt_length = prompt_ids.size(1)
-        prompt_ids = prompt_completion_ids[:, :prompt_length]
-        completion_ids = prompt_completion_ids[:, prompt_length:]
+        # TODO: figure out what order these are returned in - if prompts are ["A", "B"] and n=2, is it ["A...", "A...", "B...", "B..."] or ["A...", "B...", "A...", "B..."]?
+        completion_ids = self.vllm.generate(prompts, n=self.num_generations)
+        completion_ids = torch.tensor(completion_ids, device=self.device)
+        
+        prompt_completion_ids = torch.cat([prompt_ids, completion_ids], dim=1)
 
         # Mask everything after the first EOS token
         is_eos = completion_ids == self.tokenizer.eos_token_id
@@ -242,6 +242,9 @@ class GRPOTrainer:
             output_reward_func = reward_func(
                 prompts=batch["prompt"], completions=completions, **reward_kwargs
             )
+            
+            if None in output_reward_func:
+                print(f"{reward_func.__name__} returned None for the following kwargs: {reward_kwargs}. It will be treated as 0.")
 
             # Convert None values to NaN
             output_reward_func = [
@@ -325,6 +328,18 @@ class GRPOTrainer:
             "advantages": advantages,
             "metrics": metrics,
         }
+        
+    def sync_policy_to_vllm(self):
+        # TODO: is this equivalent?
+        gather_if_zero3 = deepspeed.zero.GatheredParameters if is_deepspeed_zero3_enabled() else nullcontext
+        
+        for name, param in self.policy.named_parameters():
+            with gather_if_zero3([param]):
+                if self.accelerator.is_main_process:
+                    self.vllm.update_param(name, param.data)
+        
+        if self.accelerator.is_main_process:
+            self.vllm.reset_prefix_cache()
 
     def compute_loss(
         self, inputs
