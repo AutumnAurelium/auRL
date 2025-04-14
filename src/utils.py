@@ -9,7 +9,7 @@ from accelerate import Accelerator
 import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel
 import itertools
-
+import numpy as np
 # This function is taken directly from [HuggingFace TRL](https://github.com/huggingface/trl), Copyright 2025 The HuggingFace Team.
 def selective_log_softmax(logits: torch.Tensor, index: int):
     """
