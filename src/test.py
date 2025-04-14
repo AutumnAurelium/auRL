@@ -80,8 +80,8 @@ if __name__ == "__main__":
         dataset, batch_size=batch_size, shuffle=True
     )
     
-    policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager")
-    ref_policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="eager")
+    policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="flash_attention_2")
+    ref_policy = AutoModelForCausalLM.from_pretrained(model_name, attn_implementation="flash_attention_2")
     tok = AutoTokenizer.from_pretrained(model_name)
     
     optimizer = bnb.optim.Adam8bit(
