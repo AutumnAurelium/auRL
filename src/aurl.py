@@ -17,7 +17,7 @@ from contextlib import nullcontext
 from accelerate import Accelerator
 from accelerate.utils import broadcast_object_list, gather, gather_object, is_peft_model, set_seed
 from vllm_client import VLLMClient
-from utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation, pad
+from utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation
 
 class GRPOTrainer:
     accelerator: Accelerator
@@ -185,25 +185,29 @@ class GRPOTrainer:
         completion_ids = pad(completion_ids, padding_value=self.tokenizer.pad_token_id)
         prompt_completion_ids = torch.cat([prompt_ids, completion_ids], dim=1)
 
-        # Pad completion_ids to the right and create completion_mask
-        max_completion_len = max(len(c) for c in completion_ids_list)
-        padded_completion_ids = []
-        completion_mask_list = []
-        for comp in completion_ids_list:
-            current_len = len(comp)
-            padding_len = max_completion_len - current_len
-            padded_comp = comp + [self.tokenizer.pad_token_id] * padding_len
-            mask = [1] * current_len + [0] * padding_len
-            padded_completion_ids.append(padded_comp)
-            completion_mask_list.append(mask)
+        # Mask everything after the first EOS token
+        is_eos = completion_ids == self.tokenizer.eos_token_id
 
-        completion_ids = torch.tensor(padded_completion_ids, device=self.device)
-        completion_mask = torch.tensor(completion_mask_list, device=self.device)
-        
-        prompt_completion_ids = torch.cat([prompt_ids, completion_ids], dim=1)
+        # calculate index of the first EOS token in each sequence in the batch
+        eos_idx = torch.full(
+            (is_eos.size(0),),  # batch size
+            is_eos.size(1),     # max seq. length
+            dtype=torch.long,
+            device=self.device,
+        )
+        eos_idx[is_eos.any(dim=1)] = is_eos.int().argmax(dim=1)[is_eos.any(dim=1)]
+
+        # index of every token in sequence
+        sequence_indices = torch.arange(is_eos.size(1), device=self.device).expand(
+            is_eos.size(0), -1
+        )
+        # mask where index within completion
+        completion_mask = (sequence_indices <= eos_idx.unsqueeze(1)).int()
+
+        # (batch_size, prompt_length+completion_length) concatenated mask
         attention_mask = torch.cat([prompt_mask, completion_mask], dim=1)
 
-        logits_to_keep = max_completion_len
+        logits_to_keep = completion_ids.size(1)
 
         with torch.no_grad():
             # When using num_iterations == 1, ßper_token_logps == per_token_logps, so we can skip its
