@@ -176,7 +176,9 @@ class VLLMClient:
         if response.status_code == 200:
             tensor_parallel_size = response.json()["tensor_parallel_size"]
         else:
-            raise Exception(f"Request failed: {response.status_code}, {response.text}")
+            # raise Exception(f"Request failed: {response.status_code}, {response.text}")
+            warnings.warn("Failed to get tensor parallel size from vLLM server, assuming 1")
+            tensor_parallel_size = 1
 
         world_size = tensor_parallel_size + 1
 
