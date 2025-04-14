@@ -220,7 +220,7 @@ def main(script_args: ScriptArguments):
     
     model = llm.llm_engine.model_executor.driver_worker.model_runner.model
     parameter_names = [name for name, _ in model.named_parameters()]
-    print("\n".join(parameter_names))
+    logger.warning(f"Parameter names: {parameter_names}")
 
     app = FastAPI()
 
