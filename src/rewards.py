@@ -32,7 +32,10 @@ def base64_reward(prompts: list[str], completions: list[str], answers: list[str]
             
     return rewards
 
-def generate_encoded_strings(length: int = 10, num_iterations: int = 1) -> str:
+def generate_encoded_strings(n: int) -> list[tuple[str, str]]:
+    return [generate_encoded_string() for _ in range(n)]
+
+def generate_encoded_string(length: int = 10, num_iterations: int = 1) -> str:
     """Generates a random string and returns an """
     random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
@@ -41,5 +44,5 @@ def generate_encoded_strings(length: int = 10, num_iterations: int = 1) -> str:
     for _ in range(num_iterations):
         encoded_bytes = base64.b64encode(encoded_bytes)
     
-    return encoded_bytes.decode('utf-8')
+    return random_string, encoded_bytes.decode('utf-8')
 

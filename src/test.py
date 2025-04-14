@@ -69,10 +69,11 @@ if __name__ == "__main__":
         {
             "prompt": json.dumps([
                 {"role": "system", "content": BASE64_PROMPT},
-                {"role": "user", "content": f"Please decode the following base64-encoded string: {generate_encoded_strings()}"}
-            ])
+                {"role": "user", "content": f"Please decode the following base64-encoded string: {encoded}"}
+            ]),
+            "answer": answer
         }
-        for _ in range(1000)
+        for encoded, answer in generate_encoded_strings(1000)
     ])
     
     train_dataloader = DataLoader(
