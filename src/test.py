@@ -181,6 +181,8 @@ if __name__ == "__main__":
                 )
                 
                 optimizer.step()
+                
+                trainer.sync_policy_to_vllm()
             
             lr_scheduler.step()
             
