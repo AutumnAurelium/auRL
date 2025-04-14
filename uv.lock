@@ -153,14 +153,17 @@ dependencies = [
     { name = "bitsandbytes", marker = "sys_platform == 'linux'" },
     { name = "datasets" },
     { name = "deepspeed", marker = "sys_platform == 'linux'" },
+    { name = "fastapi" },
     { name = "flash-attn", marker = "sys_platform == 'linux'" },
     { name = "mpi4py", marker = "sys_platform == 'linux'" },
     { name = "openai" },
     { name = "pandas" },
+    { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "torch" },
     { name = "transformers", version = "4.50.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
     { name = "transformers", version = "4.51.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'linux'" },
+    { name = "uvicorn" },
     { name = "vllm", marker = "sys_platform == 'linux'" },
     { name = "wandb" },
 ]
@@ -171,13 +174,16 @@ requires-dist = [
     { name = "bitsandbytes", marker = "sys_platform == 'linux'", specifier = ">=0.45.3" },
     { name = "datasets", specifier = ">=3.4.1" },
     { name = "deepspeed", marker = "sys_platform == 'linux'", specifier = ">=0.16.4" },
+    { name = "fastapi", specifier = ">=0.115.12" },
     { name = "flash-attn", marker = "sys_platform == 'linux'", specifier = ">=0.2.4" },
     { name = "mpi4py", marker = "sys_platform == 'linux'", specifier = ">=4.0.3" },
     { name = "openai", specifier = ">=1.69.0" },
     { name = "pandas", specifier = ">=2.2.3" },
+    { name = "pydantic", specifier = ">=2.10.6" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "transformers", specifier = ">=4.50.0" },
+    { name = "uvicorn", specifier = ">=0.34.0" },
     { name = "vllm", marker = "sys_platform == 'linux'", specifier = ">=0.8.3" },
     { name = "wandb", specifier = ">=0.19.8" },
 ]
@@ -498,9 +504,9 @@ name = "fastapi"
 version = "0.115.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pydantic", marker = "sys_platform == 'linux'" },
-    { name = "starlette", marker = "sys_platform == 'linux'" },
-    { name = "typing-extensions", marker = "sys_platform == 'linux'" },
+    { name = "pydantic" },
+    { name = "starlette" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f4/55/ae499352d82338331ca1e28c7f4a63bfd09479b16395dce38cf50a39e2c2/fastapi-0.115.12.tar.gz", hash = "sha256:1e2c2a2646905f9e83d32f04a3f86aff4a286669c6c950ca95b5fd68c2602681", size = 295236 }
 wheels = [
@@ -2177,7 +2183,7 @@ name = "starlette"
 version = "0.46.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "anyio", marker = "sys_platform == 'linux'" },
+    { name = "anyio" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/04/1b/52b27f2e13ceedc79a908e29eac426a63465a1a01248e5f24aa36a62aeb3/starlette-0.46.1.tar.gz", hash = "sha256:3c88d58ee4bd1bb807c0d1acb381838afc7752f9ddaec81bbe4383611d833230", size = 2580102 }
 wheels = [
@@ -2427,8 +2433,8 @@ name = "uvicorn"
 version = "0.34.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click", marker = "sys_platform == 'linux'" },
-    { name = "h11", marker = "sys_platform == 'linux'" },
+    { name = "click" },
+    { name = "h11" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/4b/4d/938bd85e5bf2edeec766267a5015ad969730bb91e31b44021dfe8b22df6c/uvicorn-0.34.0.tar.gz", hash = "sha256:404051050cd7e905de2c9a7e61790943440b3416f49cb409f965d9dcd0fa73e9", size = 76568 }
 wheels = [
