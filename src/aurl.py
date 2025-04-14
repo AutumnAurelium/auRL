@@ -170,6 +170,9 @@ class GRPOTrainer:
             min_p=0.0,
             repetition_penalty=1.0
         )
+        # pad all completions to the same length
+        max_gen_len = max([len(completion) for completion in completion_ids])
+        completion_ids = [completion + [self.tokenizer.eos_token_id] * (max_gen_len - len(completion)) for completion in completion_ids]
         completion_ids = torch.tensor(completion_ids, device=self.device)
         
         prompt_completion_ids = torch.cat([prompt_ids, completion_ids], dim=1)
