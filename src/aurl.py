@@ -159,6 +159,7 @@ class GRPOTrainer:
         prompt_mask = torch.repeat_interleave(prompt_mask, self.num_generations, dim=0)
 
         # TODO: figure out what order these are returned in - if prompts are ["A", "B"] and n=2, is it ["A...", "A...", "B...", "B..."] or ["A...", "B...", "A...", "B..."]?
+        # TODO: collect all prompts and send one request
         completion_ids = self.vllm.generate(prompts, n=self.num_generations)
         completion_ids = torch.tensor(completion_ids, device=self.device)
         

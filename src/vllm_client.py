@@ -56,7 +56,7 @@ class VLLMClient:
                 elapsed_time = time.time() - start_time
                 if elapsed_time >= self.timeout:
                     raise ConnectionError(
-                        f"The vLLM server at {self.host}:{self.server_port} could not be reached after {self.timeout} seconds. Make sure the server is running."
+                        f"The vLLM server at {self.host}:{self.port} could not be reached after {self.timeout} seconds. Make sure the server is running."
                     ) from exc
             else:
                 if response.status_code == 200:
@@ -106,7 +106,7 @@ class VLLMClient:
             `list[list[int]]`:
                 List of lists of token IDs representing the model-generated completions for each prompt.
         """
-        url = f"http://{self.host}:{self.server_port}/generate/"
+        url = f"http://{self.host}:{self.port}/generate/"
         response = self.session.post(
             url,
             json={
@@ -137,7 +137,7 @@ class VLLMClient:
                 Tensor containing the updated weights.
         """
         dtype, shape = str(new_weights.dtype), tuple(new_weights.shape)
-        url = f"http://{self.host}:{self.server_port}/update_named_param/"
+        url = f"http://{self.host}:{self.port}/update_named_param/"
         response = self.session.post(url, json={"name": name, "dtype": dtype, "shape": shape})
         if response.status_code != 200:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
@@ -161,7 +161,7 @@ class VLLMClient:
         """
         Resets the prefix cache for the model.
         """
-        url = f"http://{self.host}:{self.server_port}/reset_prefix_cache/"
+        url = f"http://{self.host}:{self.port}/reset_prefix_cache/"
         response = self.session.post(url)
         if response.status_code != 200:
             raise Exception(f"Request failed: {response.status_code}, {response.text}")
@@ -171,7 +171,7 @@ class VLLMClient:
         Initializes the weight update group in a distributed setup for model synchronization.
         """
         # Get the tensor parallel size from the server
-        url = f"http://{self.host}:{self.server_port}/get_tensor_parallel_size/"
+        url = f"http://{self.host}:{self.port}/get_tensor_parallel_size/"
         response = requests.get(url)
         if response.status_code == 200:
             tensor_parallel_size = response.json()["tensor_parallel_size"]
@@ -181,7 +181,7 @@ class VLLMClient:
         world_size = tensor_parallel_size + 1
 
         # Initialize weight update group
-        url = f"http://{self.host}:{self.server_port}/init_communicator/"
+        url = f"http://{self.host}:{self.port}/init_communicator/"
         # In the server side, the host is set to 0.0.0.0
         response = self.session.post(url, json={"host": "0.0.0.0", "port": self.group_port, "world_size": world_size})
         if response.status_code != 200:
@@ -195,7 +195,7 @@ class VLLMClient:
         """
         Closes the weight update group and cleans up the communication group.
         """
-        url = f"http://{self.host}:{self.server_port}/close_communicator/"
+        url = f"http://{self.host}:{self.port}/close_communicator/"
 
         try:
             response = self.session.post(url)
