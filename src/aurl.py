@@ -17,7 +17,7 @@ from contextlib import nullcontext
 from accelerate import Accelerator
 from accelerate.utils import broadcast_object_list, gather, gather_object, is_peft_model, set_seed
 from vllm_client import VLLMClient
-from utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation
+from utils import selective_log_softmax, is_conversational, apply_chat_template, unwrap_model_for_generation, pad
 
 class GRPOTrainer:
     accelerator: Accelerator
