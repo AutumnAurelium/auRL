@@ -376,7 +376,7 @@ def main(script_args: ScriptArguments):
     uvicorn.run(app, host=script_args.host, port=script_args.port)
 
 if __name__ == "__main__":
-    script_args = ScriptArguments("google/gemma-3-1b-it")
+    script_args = ScriptArguments("Qwen/Qwen2.5-1.5B-Instruct")
     script_args.host = "0.0.0.0"
     script_args.port = 1111
     main(script_args)

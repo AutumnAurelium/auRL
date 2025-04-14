@@ -37,7 +37,7 @@ if __name__ == "__main__":
     
     num_iterations = 4
     
-    model_name = "google/gemma-3-1b-it"
+    model_name = "Qwen/Qwen2.5-1.5B-Instruct"
     
     accelerate.utils.set_seed(42)
     
