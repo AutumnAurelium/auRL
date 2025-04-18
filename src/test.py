@@ -73,7 +73,7 @@ if __name__ == "__main__":
             ]),
             "answers": answer
         }
-        for encoded, answer in generate_encoded_strings(1000)
+        for answer, encoded in generate_encoded_strings(1000)
     ])
     
     train_dataloader = DataLoader(
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         name="constant_with_warmup",
         optimizer=optimizer,
         num_warmup_steps=num_warmup_steps,
-        num_training_steps=num_training_steps,
+        num_training_steps=num_training_steps / num_iterations, # lr step is not called in the inner GRPO-iteration loop
     )
     
     vllm_client = VLLMClient(port=1111)
@@ -119,12 +119,12 @@ if __name__ == "__main__":
         ref_policy,
         tok,
         [base64_reward],
-        num_iterations=2,
+        num_iterations=num_iterations,
         beta=0.05,
         ds3_gather_params_for_generation=True
     )
 
-    progress_bar = tqdm(range(num_training_steps))
+    progress_bar = tqdm(range(num_training_steps / num_iterations))
     
     completion_artifact_name = f"completions_{wandb.util.generate_id()}"
         

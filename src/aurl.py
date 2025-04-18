@@ -255,7 +255,7 @@ class GRPOTrainer:
             completions = []
             for prompt, completion in zip(batch["prompt"] * len(completions_text), completions_text):
                 bootstrap = (
-                    prompt.pop()["content"] if prompt[-1]["role"] == "assistant" else ""
+                    prompt[-1]["content"] if prompt[-1]["role"] == "assistant" else ""
                 )
                 completions.append(
                     [{"role": "assistant", "content": bootstrap + completion}]
