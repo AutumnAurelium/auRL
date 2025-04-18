@@ -124,7 +124,7 @@ if __name__ == "__main__":
         ds3_gather_params_for_generation=True
     )
 
-    progress_bar = tqdm(range(num_training_steps / num_iterations))
+    progress_bar = tqdm(range(num_training_steps // num_iterations))
     
     completion_artifact_name = f"completions_{wandb.util.generate_id()}"
         
