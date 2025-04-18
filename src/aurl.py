@@ -190,7 +190,7 @@ class GRPOTrainer:
 
         # Scatter the chunked completions back to the corresponding processes
         # Each process receives a list of lists: [[local_p0_g0, local_p0_g1,...], [local_p1_g0, local_p1_g1,...], ...]
-        local_chunked_completion_ids = self.accelerator.scatter_object(chunked_completion_ids)
+        local_chunked_completion_ids = self.accelerator.scatter(chunked_completion_ids)
         
         # Flatten the received list of lists to match the repeated prompt_ids structure
         local_completion_ids = [item for sublist in local_chunked_completion_ids for item in sublist]
