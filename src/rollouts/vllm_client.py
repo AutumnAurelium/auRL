@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class VLLMClient:
     """
-    A wrapper around a vLLM inference server.
+    A wrapper around our monkey-patched vLLM inference server.
     """
     
     host: str

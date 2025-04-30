@@ -3,6 +3,16 @@ import difflib
 import base64
 import random
 import string
+import json
+
+BASE64_PROMPT = """You will be presented with a base64-encoded string. You must decode it and return the original string.
+Please structure your response like this, with no preceding or trailing text:
+<thinking>
+Here, reason through your process step by step.
+</thinking>
+<answer>
+Here, return the original (case sensitive) string and only the string.
+</answer>"""
 
 def decode_format(response: str) -> str | None:
     pattern = re.compile(
@@ -17,7 +27,7 @@ def decode_format(response: str) -> str | None:
     else:
         return None
 
-def base64_reward(prompts: list[str], completions: list[str], answers: list[str]):
+def base64_reward(completions: list[str], prompts: list[str], answers: list[str]):
     rewards = []
     for completion, correct_answer in zip(completions, answers):
         response = completion[-1]["content"]
@@ -46,3 +56,15 @@ def generate_encoded_string(length: int = 10, num_iterations: int = 1) -> str:
     
     return random_string, encoded_bytes.decode('utf-8')
 
+def generate_datapoint() -> tuple[str, str]:
+    random_string, encoded_string = generate_encoded_string()
+    return {
+        "prompt": [
+            {"role": "system", "content": BASE64_PROMPT},
+            {"role": "user", "content": f"Please decode the following base64-encoded string: {encoded_string}"}
+        ],
+        "answer": random_string
+    }
+
+def generate_dataset(n: int) -> list[dict[str, list[dict[str, str]] | str]]:
+    return [generate_datapoint() for _ in range(n)]

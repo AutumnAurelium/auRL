@@ -2,3 +2,5 @@
 data
 
 .env
+
+__pycache__
